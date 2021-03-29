@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="about" cacheShape="false" centerShape="false" focusTraversable="true" onDragDetected="#OnClick_btnAboutExit" prefHeight="500.0" prefWidth="600.0" scaleShape="false" stylesheets="@../styles/day.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller_about">
+   <children>
+      <ImageView fitHeight="234.0" fitWidth="375.0" layoutX="184.0" layoutY="161.0" onDragDetected="#OnClick_btnAboutExit" onKeyPressed="#OnClick_btnAboutExit" onMouseDragEntered="#OnClick_btnAboutExit" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../images/dnvc1.png" />
+         </image>
+         <effect>
+            <Blend />
+         </effect>
+      </ImageView>
+      <Label alignment="CENTER" contentDisplay="CENTER" graphicTextGap="10.0" layoutX="20.0" layoutY="64.0" mouseTransparent="true" prefHeight="104.0" prefWidth="634.0" text="СПЕЦІАЛІЗОВАНЕ ПРОГРАМНЕ ЗАБЕЗПЕЧЕННЯ ДЛЯ ОБРОБКИ ТА ВІДОБРАЖЕННЯ ІНФОРМАЦІЇ ПРО ПАРАМЕТРИ РУХУ, ОТРИМАНОЇ ВІД ЗАСОБІВ ВІДЕОРЕЄСТРАЦІЇ" textAlignment="CENTER" textFill="#da0b19" textOverrun="LEADING_WORD_ELLIPSIS" wrapText="true">
+         <font>
+            <Font name="Verdana Bold" size="18.0" />
+         </font>
+         <effect>
+            <DropShadow spread="0.51" />
+         </effect>
+      </Label>
+      <Button fx:id="exitAbout" cacheShape="false" cancelButton="true" centerShape="false" contentDisplay="CENTER" graphicTextGap="2.0" layoutX="610.0" layoutY="14.0" mnemonicParsing="false" onAction="#OnClick_btnAboutExit" prefHeight="38.0" prefWidth="43.0" scaleShape="false" styleClass="button1" stylesheets="@../styles/day.css" textAlignment="CENTER" textOverrun="CENTER_WORD_ELLIPSIS">
+         <font>
+            <Font name="System Bold" size="12.0" />
+         </font>
+         <graphic>
+            <ImageView fitHeight="30.0" fitWidth="36.0" pickOnBounds="true">
+               <image>
+                  <Image url="@../images/delete.png" />
+               </image>
+            </ImageView>
+         </graphic>
+         <cursor>
+            <Cursor fx:constant="CLOSED_HAND" />
+         </cursor>
+      </Button>
+      <Label layoutX="63.0" layoutY="378.0" prefHeight="68.0" prefWidth="548.0" text="Державний науково-дослідний інститут випробувань та сертифікації озброєння і військової техніки" textAlignment="CENTER" textFill="#05f531" wrapText="true">
+         <font>
+            <Font name="System Bold Italic" size="18.0" />
+         </font>
+         <effect>
+            <DropShadow height="20.76" radius="11.4225" spread="0.37" width="26.93" />
+         </effect>
+      </Label>
+      <Label layoutX="597.0" layoutY="457.0" text="2021 рік" textFill="#1d1e1e">
+         <font>
+            <Font name="System Bold Italic" size="14.0" />
+         </font>
+         <effect>
+            <DropShadow spread="0.15">
+               <color>
+                  <Color red="0.09819687902927399" green="0.09819687902927399" blue="0.6842105388641357" />
+               </color></DropShadow>
+         </effect>
+      </Label>
+      <Label alignment="CENTER" contentDisplay="CENTER" layoutX="61.0" layoutY="26.0" prefHeight="38.0" prefWidth="548.0" text="FOCUS" textAlignment="CENTER" textFill="#da0e18">
+         <font>
+            <Font name="Verdana Bold" size="28.0" />
+         </font>
+         <effect>
+            <DropShadow spread="0.51" />
+         </effect>
+      </Label>
+      <Label layoutX="53.0" layoutY="436.0" prefHeight="35.0" prefWidth="91.0" text="м. Чернігів" textAlignment="CENTER" textFill="#1e1e1e">
+         <font>
+            <Font name="System Bold Italic" size="14.0" />
+         </font>
+         <effect>
+            <DropShadow spread="0.05">
+               <color>
+                  <Color red="0.19563840329647064" green="0.167153999209404" blue="0.7368420958518982" />
+               </color></DropShadow>
+         </effect>
+      </Label>
+      <Label layoutX="302.0" layoutY="440.0" prefHeight="27.0" prefWidth="110.0" text="Версія 1.00.02" textFill="#0f0f0f">
+         <font>
+            <Font name="System Bold" size="14.0" />
+         </font>
+      </Label>
+   </children>
+   <styleClass>
+      <String fx:value="text-field" />
+      <String fx:value="about" />
+   </styleClass>
+   <effect>
+      <Blend />
+   </effect>
+</AnchorPane>

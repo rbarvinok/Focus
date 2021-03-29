@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.media.*?>
+<?import javafx.scene.text.*?>
+
+<VBox fx:id="vbox" prefHeight="858.0" prefWidth="1665.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller">
+    <MenuBar VBox.vgrow="NEVER">
+        <Menu mnemonicParsing="false" text="Файл">
+            <MenuItem mnemonicParsing="false" onAction="#onClickNew" text="Новий" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickOpenFile" text="Відкрити" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickSave" text="Зберегти" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickCancelBtn" text="Вийти" />
+        </Menu>
+        <Menu mnemonicParsing="false" text="Інструменти">
+            <MenuItem mnemonicParsing="false" onAction="#onClickCalculate" text="Розрахувати" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickChart" text="Графік" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickKML" text="Створити файл KML" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickGoogleEarth" text="Відкрити Google Earth" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickOpenFileInDesktop" text="Перегляд файлу" />
+        </Menu>
+        <Menu mnemonicParsing="false" text="Налаштування">
+            <MenuItem mnemonicParsing="false" onAction="#onClickSettings" text="Часовий пос" />
+        </Menu>
+        <Menu mnemonicParsing="false" text="Допомога">
+            <MenuItem mnemonicParsing="false" onAction="#onClickMenuGoPro" text="Керівництво GoPro 7" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickHelp" text="Керівництво оператора ПЗ" />
+            <MenuItem mnemonicParsing="false" onAction="#onClick_menuAbout" text="Про програму" />
+        </Menu>
+    </MenuBar>
+    <ToolBar prefHeight="35.0" prefWidth="665.0">
+        <Button focusTraversable="false" lineSpacing="1.0" mnemonicParsing="false" onAction="#onClickNew" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/new.png" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Новий бланк" />
+            </tooltip>
+        </Button>
+        <Button id="b" focusTraversable="false" mnemonicParsing="false" onAction="#onClickOpenFile" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/open.png" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Відкрити файл" />
+            </tooltip>
+        </Button>
+        <Button fx:id="tSave" disable="true" focusTraversable="false" mnemonicParsing="false" onAction="#onClickSave" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <tooltip>
+                <Tooltip text="Зберегти в файл" />
+            </tooltip>
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/save.png" />
+                </ImageView>
+            </graphic>
+        </Button>
+        <Separator layoutX="211.0" layoutY="10.0" orientation="VERTICAL" prefHeight="0.0" prefWidth="4.0">
+            <tooltip>
+                <Tooltip text="Зактити програму" />
+            </tooltip>
+        </Separator>
+        <Button fx:id="tCalc" disable="true" focusTraversable="false" layoutX="90.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickCalculate" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <tooltip>
+                <Tooltip text="Вилучення даних GPS" />
+            </tooltip>
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/calculator.png" />
+                </ImageView>
+            </graphic>
+        </Button>
+        <Button fx:id="tChart" disable="true" focusTraversable="false" layoutX="140.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickChart" prefHeight="25.0" prefWidth="26.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <tooltip>
+                <Tooltip text="Відображення в графічному вигляді" />
+            </tooltip>
+            <graphic>
+                <ImageView fitHeight="22.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/Chart.png" />
+                </ImageView>
+            </graphic>
+        </Button>
+        <Separator orientation="VERTICAL" prefHeight="0.0" prefWidth="4.0">
+            <tooltip>
+                <Tooltip text="Зактити програму" />
+            </tooltip>
+        </Separator>
+        <Button fx:id="tKml" disable="true" focusTraversable="false" layoutX="90.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickKML" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <tooltip>
+                <Tooltip text="Створення файлу KML" />
+            </tooltip>
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/kml.png" />
+                </ImageView>
+            </graphic>
+        </Button>
+        <Button focusTraversable="false" layoutX="231.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickGoogleEarth" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <tooltip>
+                <Tooltip text="Відкрити GoogleEarth Pro" />
+            </tooltip>
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/googleearth.png" />
+                </ImageView>
+            </graphic>
+        </Button>
+        <Separator layoutX="221.0" layoutY="10.0" orientation="VERTICAL" prefHeight="0.0" prefWidth="4.0">
+            <tooltip>
+                <Tooltip text="Зактити програму" />
+            </tooltip>
+        </Separator>
+        <Button id="b" focusTraversable="false" layoutX="359.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickGetTimeMark" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/bookmark.png" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Перегляд збережених відміток часу" />
+            </tooltip>
+        </Button>
+        <Button id="b" focusTraversable="false" layoutX="50.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickOpenFileInDesktop" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/XLS-icon.png" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Відкрити файл для перегляду" />
+            </tooltip>
+        </Button>
+        <Button id="b" focusTraversable="false" layoutX="50.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickSettings" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/options.png" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Часовий пояс" />
+            </tooltip>
+        </Button>
+
+        <Button focusTraversable="false" mnemonicParsing="false" onAction="#onClickHelp" prefHeight="18.0" prefWidth="16.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="14.0" fitWidth="14.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/question-mark.png" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Довідка" />
+            </tooltip>
+        </Button>
+        <Button id="b" focusTraversable="false" layoutX="231.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickCancelBtn" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/icons-exit.jpg" />
+                </ImageView>
+            </graphic>
+            <tooltip>
+                <Tooltip text="Вихід з програми" />
+            </tooltip>
+        </Button>
+    </ToolBar>
+    <HBox spacing="5.0" VBox.vgrow="ALWAYS">
+        <VBox cache="true" HBox.hgrow="ALWAYS">
+            <StackPane prefHeight="728.0" prefWidth="1102.0" style="-fx-border-color: #d0d0d0;" VBox.vgrow="ALWAYS">
+                <VBox.margin>
+                    <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                </VBox.margin>
+                <ProgressIndicator fx:id="progressIndicator" prefHeight="90.0" prefWidth="150.0" visible="false" />
+                <MediaView fx:id="mediaView" fitHeight="1400.0" fitWidth="1200.0" mouseTransparent="true" pickOnBounds="true">
+                    <viewport>
+                        <Rectangle2D height="1080.0" width="1920.0" />
+                    </viewport>
+                </MediaView>
+            </StackPane>
+            <AnchorPane id="box" prefHeight="0.0" prefWidth="1014.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" VBox.vgrow="ALWAYS">
+                <opaqueInsets>
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                </opaqueInsets>
+                <VBox.margin>
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                </VBox.margin>
+                <effect>
+                    <Blend />
+                </effect>
+                <Slider fx:id="timeSlider" layoutX="21.0" layoutY="22.0" prefHeight="7.0" prefWidth="1072.0" AnchorPane.leftAnchor="19.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="2.0" />
+                <Button fx:id="playerPlay" defaultButton="true" disable="true" layoutX="20.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickPlayerPlay" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css">
+                    <graphic>
+                        <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                            <Image url="@../images/player/play.png" />
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="playerPause" disable="true" layoutX="62.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickPlayerPause" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" textAlignment="CENTER" AnchorPane.leftAnchor="62.0">
+                    <graphic>
+                        <ImageView disable="true" fitHeight="17.0" fitWidth="29.0" pickOnBounds="true" preserveRatio="true">
+                            <Image url="@../images/player/pause.png" />
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="playerClose" disable="true" layoutX="197.0" layoutY="36.0" mnemonicParsing="false" onAction="#onClickPlayerClose" prefHeight="25.0" prefWidth="42.0" styleClass="button1" AnchorPane.leftAnchor="195.0" AnchorPane.topAnchor="34.0">
+                    <graphic>
+                        <ImageView disable="true" fitHeight="17.0" fitWidth="17.0" pickOnBounds="true" preserveRatio="true">
+                            <Image url="@../images/player/stop.png" />
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Label fx:id="timeLabel" alignment="CENTER_RIGHT" contentDisplay="RIGHT" layoutX="577.0" layoutY="35.0" prefHeight="25.0" prefWidth="239.0" textAlignment="RIGHT" AnchorPane.rightAnchor="32.0" AnchorPane.topAnchor="34.0" />
+                <Slider fx:id="volumeSlider" layoutX="257.0" layoutY="43.0" AnchorPane.leftAnchor="257.0" AnchorPane.topAnchor="39.0" />
+                <Button fx:id="playerMute" disable="true" layoutX="398.0" layoutY="35.0" mnemonicParsing="false" onAction="#onClickPlayerMute" prefHeight="25.0" prefWidth="42.0" styleClass="button1" AnchorPane.topAnchor="34.0">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                            <Image url="@../images/player/mute_on.png" />
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="timeMarkButton" disable="true" layoutX="487.0" layoutY="30.0" mnemonicParsing="false" onAction="#onClickSetTimeMark" styleClass="button1" stylesheets="@../styles/day.css" text="Створити мітку часу" textFill="#0c54d0" AnchorPane.leftAnchor="487.0" AnchorPane.topAnchor="34.0">
+                    <graphic>
+                        <ImageView fitHeight="16.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                            <Image url="@../images/bookmark.png" />
+                        </ImageView>
+                    </graphic>
+                </Button>
+            <Button fx:id="playerRevers" defaultButton="true" disable="true" layoutX="105.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickRevers" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="105.0" AnchorPane.topAnchor="34.0">
+               <graphic>
+                  <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/player/left.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            <Button fx:id="playerForward" defaultButton="true" disable="true" layoutX="148.0" layoutY="36.0" mnemonicParsing="false" onAction="#onClickForward" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="148.0" AnchorPane.topAnchor="34.0">
+               <graphic>
+                  <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/player/rigth.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            </AnchorPane>
+        </VBox>
+        <VBox alignment="TOP_CENTER" prefHeight="765.0" prefWidth="628.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" HBox.hgrow="ALWAYS">
+            <Label fx:id="statusLabel" alignment="CENTER" prefHeight="17.0" prefWidth="519.0" textAlignment="CENTER" wrapText="true" VBox.vgrow="NEVER">
+                <VBox.margin>
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                </VBox.margin>
+                <font>
+                    <Font name="System Bold" size="13.0" />
+                </font>
+            </Label>
+         <TableView fx:id="outputTable" editable="true" focusTraversable="false" prefHeight="657.0" prefWidth="400.0" VBox.vgrow="ALWAYS">
+            <VBox.margin>
+               <Insets left="5.0" right="5.0" />
+            </VBox.margin>
+             <placeholder>
+                 <Label text="Відсутні дані для відображення" />
+             </placeholder>
+         </TableView>
+            <TextArea fx:id="outputText" editable="false" focusTraversable="false" prefHeight="55.0" prefWidth="342.0" wrapText="true" VBox.vgrow="ALWAYS">
+                <VBox.margin>
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                </VBox.margin>
+                <font>
+                    <Font size="13.0" />
+                </font>
+            </TextArea>
+        </VBox>
+    </HBox>
+    <AnchorPane focusTraversable="true" prefHeight="25.0" prefWidth="1460.0" VBox.vgrow="NEVER">
+        <TextField fx:id="statusBar" editable="false" prefHeight="25.0" prefWidth="934.0" promptText="Очікування вхідних даних" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+        <TextField fx:id="labelLineCount" editable="false" layoutX="747.0" prefHeight="25.0" prefWidth="185.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+        <Label fx:id="labelAllTime" layoutX="577.0" layoutY="34.0" prefHeight="24.0" prefWidth="225.0" AnchorPane.bottomAnchor="1.0" />
+        <Label fx:id="labelData" layoutX="337.0" layoutY="34.0" prefHeight="19.0" prefWidth="206.0" AnchorPane.bottomAnchor="1.0" />
+    </AnchorPane>
+</VBox>

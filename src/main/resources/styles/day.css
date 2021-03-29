@@ -1,0 +1,37 @@
+.button1 {
+    -fx-background-color: transparent;
+}
+
+.button1:hover {
+    -fx-border-color: #d0d0d0;
+}
+
+.text-area:hover {
+    -fx-text-fill: #404044;
+    -fx-background-color: #d0d0d0;
+}
+
+.text-field:hover {
+    -fx-text-fill: #404044;
+    -fx-border-color: #d0d0d0;
+}
+
+.about {
+ -fx-background-color: transparent;
+ }
+
+.box{
+-fx-border-color: #d0d0d0;
+}
+
+.chart-line-symbol {
+-fx-background-color: blue, red;
+-fx-background-insets: 0,0;
+-fx-background-radius: 0px;
+-fx-padding: 0px;
+}
+
+.default-color0-chart-line-symbol{
+fx-background-radius: 0.0px;
+-fx-padding: 0.0px;
+}

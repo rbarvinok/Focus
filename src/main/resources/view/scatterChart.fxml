@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="935.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.ScatterChartController">
+    <children>
+        <VBox prefWidth="1018.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <ScatterChart id="chart-line-symbol" fx:id="scatterChart" alternativeColumnFillVisible="true" legendVisible="false" prefHeight="612.0" prefWidth="890.0" style="-fx-border-color: #d0d0d0;" title="Графік GPS" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                    <xAxis>
+                        <NumberAxis forceZeroInRange="false" label="Широта, град" side="BOTTOM">
+                            <opaqueInsets>
+                                <Insets />
+                            </opaqueInsets>
+                        </NumberAxis>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis forceZeroInRange="false" label="Довгота, град" side="LEFT" />
+                    </yAxis>
+                    <opaqueInsets>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </opaqueInsets>
+                    <VBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </VBox.margin>
+                </ScatterChart>
+
+                <ScatterChart id="chart-line-symbol" fx:id="scatterChartAlt" alternativeColumnFillVisible="true" layoutY="511.0" legendVisible="false" prefHeight="261.0" prefWidth="1008.0" style="-fx-border-color: #d0d0d0;" title="Графік  Висота / Час" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+                    <xAxis>
+                        <NumberAxis label="Час, с" prefHeight="45.0" prefWidth="810.0" side="BOTTOM">
+                            <opaqueInsets>
+                                <Insets />
+                            </opaqueInsets>
+                        </NumberAxis>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Висота, м" side="LEFT" />
+                    </yAxis>
+                    <opaqueInsets>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </opaqueInsets>
+                    <VBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </VBox.margin>
+                </ScatterChart>
+
+            </children>
+        </VBox>
+        <Button fx:id="lineChartButton" mnemonicParsing="false" onAction="#onClickLineChart" text="У вигляді лінійного графіка" AnchorPane.bottomAnchor="15.0" AnchorPane.rightAnchor="15.0" />
+    </children>
+</AnchorPane>
