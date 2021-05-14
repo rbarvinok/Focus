@@ -4,9 +4,9 @@
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox alignment="CENTER" prefHeight="742.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.ChartVelocityController">
+<VBox alignment="CENTER" prefHeight="640.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.ChartVelocityController">
    <children>
-      <LineChart fx:id="lineChartTime" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="743.0" prefWidth="900.0" style="-fx-border-color: grey;" title="Графік  швидкість / Час" AnchorPane.bottomAnchor="343.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <LineChart fx:id="lineChartTime" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="640.0" prefWidth="900.0" style="-fx-border-color: grey;" title="Графік  Швидкість / Час" AnchorPane.bottomAnchor="343.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
         <xAxis>
           <NumberAxis label="Час, с" side="BOTTOM">
                <opaqueInsets>

@@ -8,7 +8,7 @@
 <?import javafx.scene.media.*?>
 <?import javafx.scene.text.*?>
 
-<VBox fx:id="vbox" prefHeight="858.0" prefWidth="1665.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller">
+<VBox fx:id="vbox" prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller">
     <MenuBar VBox.vgrow="NEVER">
         <Menu mnemonicParsing="false" text="Файл">
             <MenuItem mnemonicParsing="false" onAction="#onClickNew" text="Новий" />
@@ -30,7 +30,8 @@
         </Menu>
         <Menu mnemonicParsing="false" text="Допомога">
             <MenuItem mnemonicParsing="false" onAction="#onClickMenuGoPro" text="Керівництво GoPro 7" />
-            <MenuItem mnemonicParsing="false" onAction="#onClickHelp" text="Керівництво оператора ПЗ" />
+            <MenuItem mnemonicParsing="false" onAction="#onClickHelp" text="Керівництво користувача" />
+         <MenuItem mnemonicParsing="false" onAction="#onClickMenuHotKeysList" text="Поєднання клавіш" />
             <MenuItem mnemonicParsing="false" onAction="#onClick_menuAbout" text="Про програму" />
         </Menu>
     </MenuBar>
@@ -173,30 +174,33 @@
         </Button>
     </ToolBar>
     <HBox spacing="5.0" VBox.vgrow="ALWAYS">
-        <VBox cache="true" HBox.hgrow="ALWAYS">
-            <StackPane prefHeight="728.0" prefWidth="1102.0" style="-fx-border-color: #d0d0d0;" VBox.vgrow="ALWAYS">
+        <VBox cache="true" prefHeight="635.0" prefWidth="792.0" HBox.hgrow="ALWAYS">
+            <StackPane prefHeight="585.0" prefWidth="802.0" style="-fx-border-color: #d0d0d0;" VBox.vgrow="ALWAYS">
                 <VBox.margin>
-                    <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                 </VBox.margin>
                 <ProgressIndicator fx:id="progressIndicator" prefHeight="90.0" prefWidth="150.0" visible="false" />
-                <MediaView fx:id="mediaView" fitHeight="1400.0" fitWidth="1200.0" mouseTransparent="true" pickOnBounds="true">
+                <MediaView fx:id="mediaView" fitHeight="600.0" fitWidth="800.0" mouseTransparent="true" pickOnBounds="true">
                     <viewport>
                         <Rectangle2D height="1080.0" width="1920.0" />
                     </viewport>
                 </MediaView>
             </StackPane>
-            <AnchorPane id="box" prefHeight="0.0" prefWidth="1014.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" VBox.vgrow="ALWAYS">
+            <AnchorPane id="box" prefHeight="85.0" prefWidth="812.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" VBox.vgrow="ALWAYS">
                 <opaqueInsets>
-                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    <Insets />
                 </opaqueInsets>
                 <VBox.margin>
-                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    <Insets bottom="5.0" left="5.0" right="5.0" />
                 </VBox.margin>
                 <effect>
                     <Blend />
                 </effect>
                 <Slider fx:id="timeSlider" layoutX="21.0" layoutY="22.0" prefHeight="7.0" prefWidth="1072.0" AnchorPane.leftAnchor="19.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="2.0" />
                 <Button fx:id="playerPlay" defaultButton="true" disable="true" layoutX="20.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickPlayerPlay" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css">
+                    <tooltip>
+                        <Tooltip text="Відтворити" />
+                    </tooltip>
                     <graphic>
                         <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
                             <Image url="@../images/player/play.png" />
@@ -204,6 +208,9 @@
                     </graphic>
                 </Button>
                 <Button fx:id="playerPause" disable="true" layoutX="62.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickPlayerPause" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" textAlignment="CENTER" AnchorPane.leftAnchor="62.0">
+                    <tooltip>
+                        <Tooltip text="Пауза" />
+                    </tooltip>
                     <graphic>
                         <ImageView disable="true" fitHeight="17.0" fitWidth="29.0" pickOnBounds="true" preserveRatio="true">
                             <Image url="@../images/player/pause.png" />
@@ -211,6 +218,9 @@
                     </graphic>
                 </Button>
                 <Button fx:id="playerClose" disable="true" layoutX="197.0" layoutY="36.0" mnemonicParsing="false" onAction="#onClickPlayerClose" prefHeight="25.0" prefWidth="42.0" styleClass="button1" AnchorPane.leftAnchor="195.0" AnchorPane.topAnchor="34.0">
+                    <tooltip>
+                        <Tooltip text="Закрити відеоплеєр" />
+                    </tooltip>
                     <graphic>
                         <ImageView disable="true" fitHeight="17.0" fitWidth="17.0" pickOnBounds="true" preserveRatio="true">
                             <Image url="@../images/player/stop.png" />
@@ -218,15 +228,16 @@
                     </graphic>
                 </Button>
                 <Label fx:id="timeLabel" alignment="CENTER_RIGHT" contentDisplay="RIGHT" layoutX="577.0" layoutY="35.0" prefHeight="25.0" prefWidth="239.0" textAlignment="RIGHT" AnchorPane.rightAnchor="32.0" AnchorPane.topAnchor="34.0" />
-                <Slider fx:id="volumeSlider" layoutX="257.0" layoutY="43.0" AnchorPane.leftAnchor="257.0" AnchorPane.topAnchor="39.0" />
+                <Slider fx:id="volumeSlider" layoutX="259.0" layoutY="41.0" prefHeight="14.0" prefWidth="99.0" AnchorPane.leftAnchor="258.0" AnchorPane.topAnchor="40.0" />
                 <Button fx:id="playerMute" disable="true" layoutX="398.0" layoutY="35.0" mnemonicParsing="false" onAction="#onClickPlayerMute" prefHeight="25.0" prefWidth="42.0" styleClass="button1" AnchorPane.topAnchor="34.0">
-                    <graphic>
-                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
-                            <Image url="@../images/player/mute_on.png" />
-                        </ImageView>
-                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Вимкнути/Увімкнути звук" />
+                    </tooltip>
                 </Button>
-                <Button fx:id="timeMarkButton" disable="true" layoutX="487.0" layoutY="30.0" mnemonicParsing="false" onAction="#onClickSetTimeMark" styleClass="button1" stylesheets="@../styles/day.css" text="Створити мітку часу" textFill="#0c54d0" AnchorPane.leftAnchor="487.0" AnchorPane.topAnchor="34.0">
+                <Button fx:id="timeMarkButton" disable="true" layoutX="392.0" layoutY="33.0" mnemonicParsing="false" onAction="#onClickSetTimeMark" styleClass="button1" stylesheets="@../styles/day.css" text="Створити мітку часу" textFill="#0c54d0" AnchorPane.leftAnchor="392.0" AnchorPane.topAnchor="33.0">
+                    <tooltip>
+                        <Tooltip text="Створити мітку часу" />
+                    </tooltip>
                     <graphic>
                         <ImageView fitHeight="16.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
                             <Image url="@../images/bookmark.png" />
@@ -234,6 +245,9 @@
                     </graphic>
                 </Button>
             <Button fx:id="playerRevers" defaultButton="true" disable="true" layoutX="105.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickRevers" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="105.0" AnchorPane.topAnchor="34.0">
+                <tooltip>
+                    <Tooltip text="Перейти назад на 10 мілісекунд" />
+                </tooltip>
                <graphic>
                   <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
                      <image>
@@ -243,6 +257,9 @@
                </graphic>
             </Button>
             <Button fx:id="playerForward" defaultButton="true" disable="true" layoutX="148.0" layoutY="36.0" mnemonicParsing="false" onAction="#onClickForward" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="148.0" AnchorPane.topAnchor="34.0">
+                <tooltip>
+                    <Tooltip text="Перейти вперед на 10 мілісекунд" />
+                </tooltip>
                <graphic>
                   <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
                      <image>
@@ -251,26 +268,21 @@
                   </ImageView>
                </graphic>
             </Button>
+                  <ImageView fitHeight="20.0" fitWidth="20.0" layoutX="361.0" layoutY="37.0" pickOnBounds="true" preserveRatio="true">
+                      <Image url="@../images/player/mute_on.png" />
+                  </ImageView>
             </AnchorPane>
         </VBox>
-        <VBox alignment="TOP_CENTER" prefHeight="765.0" prefWidth="628.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" HBox.hgrow="ALWAYS">
-            <Label fx:id="statusLabel" alignment="CENTER" prefHeight="17.0" prefWidth="519.0" textAlignment="CENTER" wrapText="true" VBox.vgrow="NEVER">
-                <VBox.margin>
-                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                </VBox.margin>
-                <font>
-                    <Font name="System Bold" size="13.0" />
-                </font>
-            </Label>
-         <TableView fx:id="outputTable" editable="true" focusTraversable="false" prefHeight="657.0" prefWidth="400.0" VBox.vgrow="ALWAYS">
+        <VBox alignment="TOP_CENTER" prefHeight="635.0" prefWidth="502.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" HBox.hgrow="ALWAYS">
+         <TableView fx:id="outputTable" editable="true" focusTraversable="false" prefHeight="533.0" prefWidth="451.0" VBox.vgrow="ALWAYS">
             <VBox.margin>
-               <Insets left="5.0" right="5.0" />
+               <Insets left="5.0" right="5.0" top="5.0" />
             </VBox.margin>
              <placeholder>
                  <Label text="Відсутні дані для відображення" />
              </placeholder>
          </TableView>
-            <TextArea fx:id="outputText" editable="false" focusTraversable="false" prefHeight="55.0" prefWidth="342.0" wrapText="true" VBox.vgrow="ALWAYS">
+            <TextArea fx:id="outputText" mouseTransparent="true" prefHeight="83.0" prefWidth="451.0" wrapText="true" VBox.vgrow="ALWAYS">
                 <VBox.margin>
                     <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                 </VBox.margin>
@@ -285,5 +297,6 @@
         <TextField fx:id="labelLineCount" editable="false" layoutX="747.0" prefHeight="25.0" prefWidth="185.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" />
         <Label fx:id="labelAllTime" layoutX="577.0" layoutY="34.0" prefHeight="24.0" prefWidth="225.0" AnchorPane.bottomAnchor="1.0" />
         <Label fx:id="labelData" layoutX="337.0" layoutY="34.0" prefHeight="19.0" prefWidth="206.0" AnchorPane.bottomAnchor="1.0" />
+      <Label fx:id="statusLabel" layoutX="974.0" layoutY="4.0" prefHeight="17.0" prefWidth="99.0" AnchorPane.bottomAnchor="4.0" AnchorPane.rightAnchor="207.0" />
     </AnchorPane>
 </VBox>

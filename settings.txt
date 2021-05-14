@@ -1,1 +1,1 @@
-GMT=GMT+2
+GMT=GMT+3

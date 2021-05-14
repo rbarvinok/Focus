@@ -77,9 +77,6 @@ public class Controller {
     public Duration currentTime;
     public static Duration timeMark;
     public int colsInpDate = 0;
-
-    MediaPlayer mediaPlayer;
-
     public static List<GPSTime> gpsTimes = new ArrayList<>();
     public static List<GPS> gps = new ArrayList<>();
     public ObservableList<InputDate> inputDatesList = FXCollections.observableArrayList();
@@ -96,6 +93,20 @@ public class Controller {
     public ProgressIndicator progressIndicator;
     public MediaView mediaView;
     public Slider timeSlider, volumeSlider;
+    public MediaPlayer mediaPlayer;
+
+    public void onClickOpenFile() {
+        if (openFile.isEmpty())
+            onKeyPressed();
+        progressIndicatorRun();
+        fileChooserRun.openFileChooser();
+        openFile = selectedOpenFile.getName().substring(0, selectedOpenFile.getName().length() - 4);
+        openDirectory = selectedOpenFile.getParent();
+        mediaPlayerRun();
+        tCalc.setDisable(false);
+        progressIndicator.setVisible(false);
+        requestFocus(playerPause);
+    }
 
     public void openData() throws Exception {
         getSettings.getGMT();
@@ -163,19 +174,6 @@ public class Controller {
         labelData.setText(" Дата  " + data);
     }
 
-    public void onClickOpenFile() {
-        if (openFile.isEmpty())
-            onKeyPressed();
-        progressIndicatorRun();
-        fileChooserRun.openFileChooser();
-        openFile = selectedOpenFile.getName().substring(0, selectedOpenFile.getName().length() - 4);
-        openDirectory = selectedOpenFile.getParent();
-        mediaPlayerRun();
-        tCalc.setDisable(false);
-        progressIndicator.setVisible(false);
-        requestFocus(playerPause);
-    }
-
     @SneakyThrows
     public void onClickCalculate() {
         DeleteAllFilesFolder.deleteAllFilesFolder(urlFocus + "/ConGoPro/transit/");
@@ -219,9 +217,8 @@ public class Controller {
         }
         outputTable.getColumns().addAll(tTime, tLocalTime, tLat, tLong, tAlt, tSpeed);
         outputTable.setItems(inputDatesList);
-
         //--------------------------------------------------------
-        statusBar.setText(openFile + " - Дані  GPS");
+        statusBar.setText(openFile);
         statusLabel.setText("Дані  GPS");
         playerPlay.setDisable(false);
         playerPause.setDisable(true);
@@ -231,7 +228,8 @@ public class Controller {
         requestFocus(playerPlay);
     }
 
-    public void onClickKML() throws IOException {
+    @SneakyThrows
+    public void onClickKML()  {
         if (outputText.getText().equals("")) {
             statusBar.setText("Помилка! Відсутні дані для рохрахунку");
             inform.hd = "Помилка! Відсутні дані для рохрахунку";
@@ -301,7 +299,7 @@ public class Controller {
             statusBar.setText("Успішно записано в файл '" + openFile + "_kml'");
 
             statusBar.setText(openFile + ".KLM");
-            statusLabel.setText(headKLM);
+            statusLabel.setText("KLM");
         }
     }
 
@@ -403,7 +401,7 @@ public class Controller {
 
     public void onClickChart() throws IOException {
         progressIndicator.setVisible(true);
-        if (statusLabel.getText().equals("Дані  GPS") || statusLabel.getText().equals(headKLM)) {
+        if (statusLabel.getText().equals("Дані  GPS") || statusLabel.getText().equals("KLM")) {
             os.viewURL = "/view/lineChart.fxml";
             os.title = "Графік GPS   " + openFile;
             os.openStage();
@@ -566,7 +564,8 @@ public class Controller {
         DeleteAllFilesFolder.deleteAllFilesFolder(urlFocus + "/ConGoPro/out/");
     }
 
-    public void onClickGoogleEarth() throws IOException {
+    @SneakyThrows
+    public void onClickGoogleEarth()  {
         Process process = Runtime.getRuntime().exec("cmd.exe /c start " + urlFocus + "/googleearth/GoogleEarthPro.exe ");
 
     }
@@ -585,9 +584,19 @@ public class Controller {
 
     }
 
-    public void onClickMenuGoPro() throws IOException {
+    @SneakyThrows
+    public void onClickMenuGoPro()  {
         if (Desktop.isDesktopSupported()) {
             String url = urlFocus + "/userManual/HERO7UM_RU_REVA.pdf";
+            Desktop desktop = Desktop.getDesktop();
+            desktop.open(new File(url));
+        }
+    }
+
+    @SneakyThrows
+    public void onClickMenuHotKeysList()  {
+        if (Desktop.isDesktopSupported()) {
+            String url = urlFocus + "/userManual/Hot_Keys.pdf";
             Desktop desktop = Desktop.getDesktop();
             desktop.open(new File(url));
         }
@@ -655,8 +664,6 @@ public class Controller {
         }
     }
 
-
-
     public void onClickForward() {
         playerPlay.setDisable(false);
         playerPause.setDisable(true);
@@ -717,6 +724,16 @@ public class Controller {
                         onClickSetTimeMark();
                     break;
                 }
+                case K: {
+                    if (event.isAltDown())
+                        onClickKML();
+                    break;
+                }
+                case G: {
+                    if (event.isAltDown())
+                        onClickGoogleEarth();
+                    break;
+                }
                 case S: {
                     if (event.isControlDown())
                         onClickSave();
@@ -734,6 +751,7 @@ public class Controller {
     public void requestFocus(Node node){
         node.requestFocus();
     }
+
     public void onClickCancelBtn() {
         DeleteAllFilesFolder.deleteAllFilesFolder(urlFocus + "/ConGoPro/transit/");
         DeleteAllFilesFolder.deleteAllFilesFolder(urlFocus + "/ConGoPro/out/");

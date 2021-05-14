@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'ua.focus'
-version '1.0.2'
+version '1.0.4'
 sourceCompatibility = 11
 
 repositories {
@@ -14,7 +14,7 @@ repositories {
 
 task startApp(type: JavaExec) {
     classpath sourceSets.main.runtimeClasspath
-    mainClassName = "ua.focus.Main"
+    main = "ua.focus.Main"
     tasks.withType(JavaCompile) {
         options.with {
             encoding = 'UTF-8'
@@ -35,7 +35,7 @@ dependencies {
 
 javafx {
     version = "15"
-    modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.web', 'javafx.media']
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
 }
 
 defaultTasks 'startApp'

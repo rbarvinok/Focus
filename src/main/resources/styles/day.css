@@ -25,13 +25,17 @@
 }
 
 .chart-line-symbol {
--fx-background-color: blue, red;
--fx-background-insets: 0,0;
--fx-background-radius: 0px;
+-fx-background-color: #d0d0d0, white;
+-fx-symbol-image: url("/images/point.png");
+-fx-background-insets: 0,2;
+-fx-background-radius: 1px;
 -fx-padding: 0px;
 }
 
-.default-color0-chart-line-symbol{
-fx-background-radius: 0.0px;
+.default-color0-chart-symbol{
+-fx-background-color: #d0d0d0, white;
+-fx-background-insets: 0,1;
+-fx-background-radius: 0.1px;
 -fx-padding: 0.0px;
+-fx-symbol-color: #404044;
 }

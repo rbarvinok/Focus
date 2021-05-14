@@ -6,11 +6,11 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="935.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.LineChartController">
+<AnchorPane prefHeight="650.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.LineChartController">
    <children>
-      <VBox prefWidth="1018.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox prefHeight="650.0" prefWidth="720.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="120.0" AnchorPane.topAnchor="0.0">
          <children>
-            <LineChart id="chart-line-symbol" fx:id="lineChart" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="612.0" prefWidth="1008.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Графік GPS" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <LineChart id="chart-line-symbol" fx:id="lineChart" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="400.0" prefWidth="890.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Графік  Широта / Довгота" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
               <xAxis>
                 <NumberAxis forceZeroInRange="false" label="Широта, град" side="BOTTOM">
                      <opaqueInsets>
@@ -33,9 +33,9 @@
                </styleClass>
             </LineChart>
       
-          <LineChart fx:id="lineChartAlt" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" layoutY="511.0" legendVisible="false" prefHeight="261.0" prefWidth="1008.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Графік  Висота / Час" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+          <LineChart id="chart-line-symbol" fx:id="lineChartAlt" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" layoutY="511.0" legendVisible="false" prefHeight="195.0" prefWidth="710.0" style="-fx-border-color: #d0d0d0;" styleClass="chart-line-symbol" stylesheets="@../styles/day.css" title="Графік  Висота / Час" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" VBox.vgrow="ALWAYS">
               <xAxis>
-                  <NumberAxis label="Час, с" prefHeight="45.0" prefWidth="810.0" side="BOTTOM">
+                  <NumberAxis label="Час, с" prefHeight="32.0" prefWidth="640.0" side="BOTTOM">
                       <opaqueInsets>
                           <Insets />
                       </opaqueInsets>
@@ -54,7 +54,7 @@
 
          </children>
       </VBox>
-      <Button fx:id="scatterChartButton" mnemonicParsing="false" onAction="#onClickScatterChart" prefHeight="25.0" prefWidth="112.0" text="У вигляді точок" AnchorPane.bottomAnchor="15.0" AnchorPane.rightAnchor="15.0" />
-      <Button fx:id="velocityChartButton" mnemonicParsing="false" onAction="#onClickVelocityChart" text="Графік швидкості" AnchorPane.bottomAnchor="15.0" AnchorPane.rightAnchor="160.0" />
+      <Button fx:id="velocityChartButton" layoutX="773.0" layoutY="611.0" mnemonicParsing="false" onAction="#onClickVelocityChart" text="Графік швидкості" AnchorPane.bottomAnchor="5.0" AnchorPane.rightAnchor="5.0" />
+      <Button fx:id="scatterChartButton" layoutX="773.0" layoutY="573.0" mnemonicParsing="false" onAction="#onClickScatterChart" prefHeight="25.0" prefWidth="112.0" text="У вигляді точок" AnchorPane.bottomAnchor="45.0" AnchorPane.rightAnchor="5.0" />
    </children>
 </AnchorPane>
