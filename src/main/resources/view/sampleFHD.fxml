@@ -34,6 +34,9 @@
          <MenuItem mnemonicParsing="false" onAction="#onClickMenuHotKeysList" text="Поєднання клавіш" />
             <MenuItem mnemonicParsing="false" onAction="#onClick_menuAbout" text="Про програму" />
         </Menu>
+      <VBox.margin>
+         <Insets />
+      </VBox.margin>
     </MenuBar>
     <ToolBar prefHeight="35.0" prefWidth="665.0">
         <Button focusTraversable="false" lineSpacing="1.0" mnemonicParsing="false" onAction="#onClickNew" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
@@ -133,14 +136,19 @@
         </Button>
         <Button id="b" focusTraversable="false" layoutX="50.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickOpenFileInDesktop" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
             <graphic>
-                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
-                    <Image url="@../images/XLS-icon.png" />
+                <ImageView fitHeight="30.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../images/Video/videoplayer.png" />
                 </ImageView>
             </graphic>
             <tooltip>
-                <Tooltip text="Відкрити файл для перегляду" />
+                <Tooltip text="Відкрити відеофайл для перегляду у зонішній програмі" />
             </tooltip>
         </Button>
+      <Separator layoutX="470.0" layoutY="10.0" orientation="VERTICAL" prefHeight="0.0" prefWidth="4.0">
+         <tooltip>
+            <Tooltip text="Зактити програму" />
+         </tooltip>
+      </Separator>
         <Button id="b" focusTraversable="false" layoutX="50.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickSettings" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
             <graphic>
                 <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
@@ -148,7 +156,7 @@
                 </ImageView>
             </graphic>
             <tooltip>
-                <Tooltip text="Часовий пояс" />
+                <Tooltip text="Налаштування" />
             </tooltip>
         </Button>
 
@@ -162,6 +170,11 @@
                 <Tooltip text="Довідка" />
             </tooltip>
         </Button>
+      <Separator layoutX="309.0" layoutY="10.0" orientation="VERTICAL" prefHeight="0.0" prefWidth="4.0">
+         <tooltip>
+            <Tooltip text="Зактити програму" />
+         </tooltip>
+      </Separator>
         <Button id="b" focusTraversable="false" layoutX="231.0" layoutY="9.0" mnemonicParsing="false" onAction="#onClickCancelBtn" prefHeight="20.0" prefWidth="20.0" styleClass="button1" stylesheets="@../styles/day.css">
             <graphic>
                 <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
@@ -175,14 +188,14 @@
     </ToolBar>
     <HBox spacing="5.0" VBox.vgrow="ALWAYS">
         <VBox cache="true" HBox.hgrow="ALWAYS">
-            <StackPane prefHeight="728.0" prefWidth="1102.0" style="-fx-border-color: #d0d0d0;" VBox.vgrow="ALWAYS">
+            <StackPane prefHeight="690.0" prefWidth="1225.0" style="-fx-border-color: #d0d0d0;" VBox.vgrow="ALWAYS">
                 <VBox.margin>
-                    <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    <Insets bottom="5.0" left="5.0" top="5.0" />
                 </VBox.margin>
                 <ProgressIndicator fx:id="progressIndicator" prefHeight="90.0" prefWidth="150.0" visible="false" />
-                <MediaView fx:id="mediaView" fitHeight="1400.0" fitWidth="1200.0" mouseTransparent="true" pickOnBounds="true">
+                <MediaView fx:id="mediaView" fitHeight="690.0" fitWidth="1225.0" mouseTransparent="true" pickOnBounds="true">
                     <viewport>
-                        <Rectangle2D height="1080.0" width="1920.0" />
+                        <Rectangle2D />
                     </viewport>
                 </MediaView>
             </StackPane>
@@ -191,55 +204,35 @@
                     <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                 </opaqueInsets>
                 <VBox.margin>
-                    <Insets bottom="5.0" left="5.0" right="5.0" />
+                    <Insets bottom="5.0" left="5.0" />
                 </VBox.margin>
                 <effect>
                     <Blend />
                 </effect>
                 <Slider fx:id="timeSlider" layoutX="21.0" layoutY="22.0" prefHeight="7.0" prefWidth="1072.0" AnchorPane.leftAnchor="19.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="2.0" />
-                <Button fx:id="playerPlay" defaultButton="true" disable="true" layoutX="20.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickPlayerPlay" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css">
+                <Button fx:id="playerPlay" defaultButton="true" disable="true" layoutX="96.0" layoutY="24.0" mnemonicParsing="false" onAction="#onClickPlayerPlay" prefHeight="42.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.topAnchor="25.0">
                     <tooltip>
                         <Tooltip text="Відтворити" />
                     </tooltip>
                     <graphic>
-                        <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                        <ImageView disable="true" fitHeight="32.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
                             <Image url="@../images/player/play.png" />
                         </ImageView>
                     </graphic>
                 </Button>
-                <Button fx:id="playerPause" disable="true" layoutX="62.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickPlayerPause" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" textAlignment="CENTER" AnchorPane.leftAnchor="62.0">
-                    <tooltip>
-                        <Tooltip text="Пауза" />
-                    </tooltip>
-                    <graphic>
-                        <ImageView disable="true" fitHeight="17.0" fitWidth="29.0" pickOnBounds="true" preserveRatio="true">
-                            <Image url="@../images/player/pause.png" />
-                        </ImageView>
-                    </graphic>
-                </Button>
-                <Button fx:id="playerClose" disable="true" layoutX="197.0" layoutY="36.0" mnemonicParsing="false" onAction="#onClickPlayerClose" prefHeight="25.0" prefWidth="42.0" styleClass="button1" AnchorPane.leftAnchor="195.0" AnchorPane.topAnchor="34.0">
-                    <tooltip>
-                        <Tooltip text="Закрити відеоплеєр" />
-                    </tooltip>
-                    <graphic>
-                        <ImageView disable="true" fitHeight="17.0" fitWidth="17.0" pickOnBounds="true" preserveRatio="true">
-                            <Image url="@../images/player/stop.png" />
-                        </ImageView>
-                    </graphic>
-                </Button>
-                <Label fx:id="timeLabel" alignment="CENTER_RIGHT" contentDisplay="RIGHT" layoutX="577.0" layoutY="35.0" prefHeight="25.0" prefWidth="239.0" textAlignment="RIGHT" AnchorPane.rightAnchor="32.0" AnchorPane.topAnchor="34.0" />
-                <Slider fx:id="volumeSlider" layoutX="257.0" layoutY="43.0" AnchorPane.leftAnchor="257.0" AnchorPane.topAnchor="39.0" />
-                <Button fx:id="playerMute" disable="true" layoutX="398.0" layoutY="35.0" mnemonicParsing="false" onAction="#onClickPlayerMute" prefHeight="25.0" prefWidth="42.0" styleClass="button1" AnchorPane.topAnchor="34.0">
+                <Label fx:id="timeLabel" alignment="CENTER_RIGHT" contentDisplay="RIGHT" layoutX="942.0" layoutY="27.0" prefHeight="25.0" prefWidth="332.0" textAlignment="RIGHT" AnchorPane.rightAnchor="21.0" AnchorPane.topAnchor="26.0" />
+                <Slider fx:id="volumeSlider" layoutX="256.0" layoutY="39.0" AnchorPane.leftAnchor="256.0" AnchorPane.topAnchor="39.0" />
+                <Button fx:id="playerMute" disable="true" layoutX="406.0" layoutY="32.0" mnemonicParsing="false" onAction="#playerMute" prefHeight="25.0" prefWidth="25.0" styleClass="button1" AnchorPane.topAnchor="32.0">
                     <tooltip>
                         <Tooltip text="Вимкнути/Увімкнути звук" />
                     </tooltip>
-                    <graphic>
+               <graphic>
                         <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                             <Image url="@../images/player/mute_on.png" />
                         </ImageView>
-                    </graphic>
+               </graphic>
                 </Button>
-                <Button fx:id="timeMarkButton" disable="true" layoutX="487.0" layoutY="30.0" mnemonicParsing="false" onAction="#onClickSetTimeMark" styleClass="button1" stylesheets="@../styles/day.css" text="Створити мітку часу" textFill="#0c54d0" AnchorPane.leftAnchor="487.0" AnchorPane.topAnchor="34.0">
+                <Button fx:id="timeMarkButton" disable="true" layoutX="442.0" layoutY="33.0" mnemonicParsing="false" onAction="#onClickSetTimeMark" styleClass="button1" stylesheets="@../styles/day.css" text="Створити мітку часу" textFill="#0c54d0" AnchorPane.leftAnchor="442.0" AnchorPane.topAnchor="33.0">
                     <tooltip>
                         <Tooltip text="Створити мітку часу" />
                     </tooltip>
@@ -249,26 +242,62 @@
                         </ImageView>
                     </graphic>
                 </Button>
-            <Button fx:id="playerRevers" defaultButton="true" disable="true" layoutX="105.0" layoutY="34.0" mnemonicParsing="false" onAction="#onClickRevers" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="105.0" AnchorPane.topAnchor="34.0">
+            <Button fx:id="playerRevers" disable="true" layoutX="53.0" layoutY="29.0" mnemonicParsing="false" onAction="#onClickRevers" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="53.0" AnchorPane.topAnchor="30.0">
                 <tooltip>
                     <Tooltip text="Перейти назад на 10 мілісекунд" />
                 </tooltip>
                <graphic>
-                  <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                  <ImageView disable="true" fitHeight="20.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/player/revers.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            <Button fx:id="playerForward" disable="true" layoutX="144.0" layoutY="29.0" mnemonicParsing="false" onAction="#onClickForward" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="144.0" AnchorPane.topAnchor="30.0">
+                <tooltip>
+                    <Tooltip text="Перейти вперед на 10 мілісекунд" />
+                </tooltip>
+               <graphic>
+                  <ImageView disable="true" fitHeight="20.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/player/forw.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            <Button fx:id="playerRevers1s" disable="true" layoutX="20.0" layoutY="30.0" mnemonicParsing="false" onAction="#onClickRevers1s" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.topAnchor="30.0">
+               <tooltip>
+                  <Tooltip text="Перейти назад на 1 секунду" />
+               </tooltip>
+               <graphic>
+                  <ImageView disable="true" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../images/player/left.png" />
                      </image>
                   </ImageView>
                </graphic>
             </Button>
-            <Button fx:id="playerForward" defaultButton="true" disable="true" layoutX="148.0" layoutY="36.0" mnemonicParsing="false" onAction="#onClickForward" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.leftAnchor="148.0" AnchorPane.topAnchor="34.0">
-                <tooltip>
-                    <Tooltip text="Перейти вперед на 10 мілісекунд" />
-                </tooltip>
+            <Button fx:id="playerForward1s" disable="true" layoutX="181.0" layoutY="30.0" mnemonicParsing="false" onAction="#onClickForward1s" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.topAnchor="30.0">
+               <tooltip>
+                  <Tooltip text="Перейти вперед на 1 секунду" />
+               </tooltip>
                <graphic>
-                  <ImageView disable="true" fitHeight="18.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
+                  <ImageView disable="true" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../images/player/rigth.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            <Button fx:id="playerRotate" disable="true" layoutX="214.0" layoutY="28.0" mnemonicParsing="false" onAction="#onClickRotate" prefHeight="25.0" prefWidth="42.0" styleClass="button1" stylesheets="@../styles/day.css" AnchorPane.topAnchor="28.0">
+               <tooltip>
+                  <Tooltip text="Повернути відео на 90 градусів по часовій стрілці" />
+               </tooltip>
+               <graphic>
+                  <ImageView disable="true" fitHeight="25.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/player/rotate.png" />
                      </image>
                   </ImageView>
                </graphic>
@@ -276,7 +305,7 @@
             </AnchorPane>
         </VBox>
         <VBox alignment="TOP_CENTER" prefHeight="765.0" prefWidth="628.0" style="-fx-border-color: #d0d0d0;" styleClass="box" stylesheets="@../styles/day.css" HBox.hgrow="ALWAYS">
-         <TableView fx:id="outputTable" editable="true" focusTraversable="false" prefHeight="657.0" prefWidth="400.0" VBox.vgrow="ALWAYS">
+         <TableView fx:id="outputTable" editable="true" focusTraversable="false" prefHeight="685.0" prefWidth="436.0" VBox.vgrow="ALWAYS">
             <VBox.margin>
                <Insets left="5.0" right="5.0" top="5.0" />
             </VBox.margin>
@@ -292,6 +321,9 @@
                     <Font size="13.0" />
                 </font>
             </TextArea>
+         <HBox.margin>
+            <Insets />
+         </HBox.margin>
         </VBox>
     </HBox>
     <AnchorPane focusTraversable="true" prefHeight="25.0" prefWidth="1460.0" VBox.vgrow="NEVER">

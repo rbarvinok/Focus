@@ -1,11 +1,11 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.9'
+    id 'org.openjfx.javafxplugin' version '0.0.10'
 }
 
 group 'ua.focus'
-version '1.0.4'
+version '1.0.5'
 sourceCompatibility = 11
 
 repositories {
@@ -21,14 +21,15 @@ task startApp(type: JavaExec) {
         }
     }
 }
+
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.18'
-    compile "org.projectlombok:lombok:1.18.18"
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    compile "org.projectlombok:lombok:1.18.20"
     compile 'ch.qos.logback:logback-classic:1.1.7'
     compile 'commons-io:commons-io:2.6'
     compile 'org.apache.commons:commons-collections4:4.4'
     compile 'org.apache.commons:commons-lang3:3.9'
-    annotationProcessor 'org.projectlombok:lombok:1.18.18'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
     compile 'org.apache.poi:poi-ooxml:4.0.1'
     //testCompile group: 'junit', name: 'junit', version: '4.12'
 }

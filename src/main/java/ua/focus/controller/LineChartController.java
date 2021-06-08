@@ -9,6 +9,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
 import lombok.SneakyThrows;
 import ua.focus.javaclass.domain.GPSTime;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
+import static ua.focus.controller.Controller.gpsTimes;
 import static ua.focus.controller.Controller.openFile;
 
 public class LineChartController implements Initializable {
@@ -29,10 +31,10 @@ public class LineChartController implements Initializable {
     @FXML
     public LineChart lineChart, lineChartAlt;
     public Button scatterChartButton, velocityChartButton;
-
+    public  TextArea outputText;
 
     @Override
-    public void initialize( URL location, ResourceBundle resources ) {
+    public void initialize(URL location, ResourceBundle resources) {
 
         NumberAxis x = new NumberAxis();
         x.setAutoRanging(false);
@@ -48,12 +50,10 @@ public class LineChartController implements Initializable {
         y.setLabel("Longitude");
 
         XYChart.Series series1 = new XYChart.Series();
-        //series1.setName("GPS");
         getGPSData();
         series1.setData(gps);
 
         lineChart.getData().addAll(series1);
-
 
         XYChart.Series seriesAlt = new XYChart.Series();
         //series1.setName("Висота");
@@ -61,6 +61,8 @@ public class LineChartController implements Initializable {
         seriesAlt.setData(alt);
 
         lineChartAlt.getData().addAll(seriesAlt);
+
+        consolidatedData(outputText);
     }
 
     public static void getGPSData() {
@@ -86,8 +88,39 @@ public class LineChartController implements Initializable {
         }
     }
 
+    public static void consolidatedData(TextArea text){
+        text.setText(new StringBuilder()
+                .append("Початок: \n")
+                .append("Час:  " + gpsTimes.get(0).getLocalTime())
+                .append("\n")
+                .append("Широта:  " + gpsTimes.get(0).getLatitude())
+                .append("\n")
+                .append("Довгота:  " + gpsTimes.get(0).getLongitude())
+                .append("\n")
+                .append("Висота:  " + gpsTimes.get(0).getAltitude() + " м")
+                .append("\n")
+                .append("Швидкість:  " + gpsTimes.get(0).getSpeed() + " м/с")
+                .append("\n\n")
+                .append("Кінець: \n")
+                .append("Час:  " + gpsTimes.get(gpsTimes.size()-1).getLocalTime())
+                .append("\n")
+                .append("Широта:  " + gpsTimes.get(gpsTimes.size()-1).getLatitude())
+                .append("\n")
+                .append("Довгота:  " + gpsTimes.get(gpsTimes.size()-1).getLongitude())
+                .append("\n")
+                .append("Висота:  " + gpsTimes.get(gpsTimes.size()-1).getAltitude() + " м")
+                .append("\n")
+                .append("Швидкість:  " + gpsTimes.get(gpsTimes.size()-1).getSpeed() + " м/с")
+                .append("\n\n")
+                .append("Час вимірювання:  " + gpsTimes.get(gpsTimes.size()-1).getTime() + " мс")
+                .append("\n")
+                .append("Всього точок:  " + gpsTimes.size()).toString()
+        );
+
+    }
+
     @SneakyThrows
-    public void onClickScatterChart( ActionEvent actionEvent ) {
+    public void onClickScatterChart(ActionEvent actionEvent) {
         os.viewURL = "/view/scatterChart.fxml";
         os.title = "Графік GPS   " + openFile;
         os.maximized = false;
@@ -97,7 +130,7 @@ public class LineChartController implements Initializable {
     }
 
     @SneakyThrows
-    public void onClickVelocityChart( ActionEvent actionEvent ) {
+    public void onClickVelocityChart(ActionEvent actionEvent) {
         os.viewURL = "/view/chartVelocity.fxml";
         os.title = "Графік швидкості - " + openFile;
         os.maximized = false;

@@ -5,11 +5,12 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="650.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.ScatterChartController">
+<AnchorPane prefHeight="650.0" prefWidth="1155.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.ScatterChartController">
     <children>
-        <VBox prefWidth="1018.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="130.0" AnchorPane.topAnchor="0.0">
+      <TextArea fx:id="outputText" focusTraversable="false" layoutX="1016.0" layoutY="14.0" mouseTransparent="true" prefHeight="563.0" prefWidth="185.0" wrapText="true" AnchorPane.bottomAnchor="82.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
+        <VBox prefHeight="650.0" prefWidth="961.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="194.0" AnchorPane.topAnchor="0.0">
             <children>
-                <ScatterChart id="default-color0-chart-symbol" fx:id="scatterChart" alternativeColumnFillVisible="true" legendVisible="false" prefHeight="400.0" prefWidth="710.0" styleClass="chart-line-symbol" stylesheets="@../styles/day.css" title="Графік  Широта / Довгота" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
+                <ScatterChart fx:id="scatterChart" alternativeColumnFillVisible="true" legendVisible="false" onMouseClicked="#getCurrentData" prefHeight="400.0" prefWidth="710.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Графік  Широта / Довгота" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
                     <xAxis>
                         <NumberAxis forceZeroInRange="false" label="Широта, град" prefWidth="822.0" side="BOTTOM">
                             <opaqueInsets>
@@ -28,9 +29,9 @@
                     </VBox.margin>
                 </ScatterChart>
 
-                <ScatterChart id="chart-symbol-color" fx:id="scatterChartAlt" alternativeColumnFillVisible="true" layoutY="511.0" legendVisible="false" prefHeight="195.0" prefWidth="890.0" style="-fx-border-color: #d0d0d0;" styleClass="chart-line-symbol" stylesheets="@../styles/day.css" title="Графік  Висота / Час" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" VBox.vgrow="ALWAYS">
+                <ScatterChart fx:id="scatterChartAlt" alternativeColumnFillVisible="true" layoutY="511.0" legendVisible="false" prefHeight="195.0" prefWidth="890.0" style="-fx-border-color: #d0d0d0;" title="Графік  Висота / Час" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" VBox.vgrow="ALWAYS">
                     <xAxis>
-                        <NumberAxis label="Час, с" prefHeight="35.0" prefWidth="820.0" side="BOTTOM">
+                        <NumberAxis label="Час, мс" prefHeight="35.0" prefWidth="820.0" side="BOTTOM">
                             <opaqueInsets>
                                 <Insets />
                             </opaqueInsets>
@@ -49,6 +50,7 @@
 
             </children>
         </VBox>
-        <Button fx:id="lineChartButton" layoutX="770.0" layoutY="589.0" mnemonicParsing="false" onAction="#onClickLineChart" prefHeight="47.0" prefWidth="122.0" text="У вигляді лінійного графіка" textAlignment="CENTER" wrapText="true" AnchorPane.bottomAnchor="5.0" AnchorPane.rightAnchor="5.0" />
+        <Button fx:id="lineChartButton" layoutX="770.0" layoutY="589.0" mnemonicParsing="false" onAction="#onClickLineChart" prefHeight="25.0" prefWidth="185.0" text="Лінійний графік" textAlignment="CENTER" wrapText="true" AnchorPane.bottomAnchor="45.0" AnchorPane.rightAnchor="5.0" />
+      <Button fx:id="velocityChartButton" layoutX="1028.0" layoutY="579.0" mnemonicParsing="false" onAction="#onClickVelocityChart" prefHeight="25.0" prefWidth="185.0" text="Графік швидкості" AnchorPane.bottomAnchor="5.0" AnchorPane.rightAnchor="5.0" />
     </children>
 </AnchorPane>

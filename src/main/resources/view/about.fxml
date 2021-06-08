@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.effect.*?>
@@ -9,9 +9,9 @@
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane id="about" cacheShape="false" centerShape="false" focusTraversable="true" onDragDetected="#OnClick_btnAboutExit" prefHeight="500.0" prefWidth="600.0" scaleShape="false" stylesheets="@../styles/day.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller_about">
+<AnchorPane id="box" cacheShape="false" centerShape="false" focusTraversable="true" onDragDetected="#OnClick_btnAboutExit" prefHeight="500.0" prefWidth="600.0" scaleShape="false" style="-fx-border-color: 0d0d0d;" styleClass="box" stylesheets="@../styles/day.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller_about">
    <children>
-      <ImageView fitHeight="290.0" fitWidth="278.0" layoutX="198.0" layoutY="111.0" onDragDetected="#OnClick_btnAboutExit" onKeyPressed="#OnClick_btnAboutExit" onMouseDragEntered="#OnClick_btnAboutExit" pickOnBounds="true" preserveRatio="true">
+      <ImageView fitHeight="290.0" fitWidth="278.0" layoutX="198.0" layoutY="111.0" onDragDetected="#OnClick_btnAboutExit" onKeyPressed="#OnClick_btnAboutExit" onMouseDragEntered="#OnClick_btnAboutExit" pickOnBounds="true" preserveRatio="true" AnchorPane.leftAnchor="175.0" AnchorPane.rightAnchor="175.0">
          <image>
             <Image url="@../images/focus.png" />
          </image>
@@ -30,7 +30,7 @@
                </color></DropShadow>
          </effect>
       </Label>
-      <Button fx:id="exitAbout" cacheShape="false" cancelButton="true" centerShape="false" contentDisplay="CENTER" defaultButton="true" graphicTextGap="2.0" layoutX="585.0" layoutY="442.0" mnemonicParsing="false" onAction="#OnClick_btnAboutExit" prefHeight="38.0" prefWidth="43.0" scaleShape="false" styleClass="button1" stylesheets="@../styles/day.css" textAlignment="CENTER" textOverrun="CENTER_WORD_ELLIPSIS">
+      <Button fx:id="exitAbout" cacheShape="false" cancelButton="true" centerShape="false" contentDisplay="CENTER" defaultButton="true" graphicTextGap="2.0" layoutX="585.0" layoutY="442.0" mnemonicParsing="false" onAction="#OnClick_btnAboutExit" prefHeight="38.0" prefWidth="37.0" scaleShape="false" styleClass="button1" stylesheets="@../styles/day.css" textAlignment="CENTER" textOverrun="CENTER_WORD_ELLIPSIS" AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="20.0">
          <font>
             <Font name="System Bold" size="12.0" />
          </font>
@@ -70,7 +70,7 @@
                </color></DropShadow>
          </effect>
       </Label>
-      <Label layoutX="282.0" layoutY="448.0" prefHeight="27.0" prefWidth="110.0" text="Версія 1.00.04" textFill="#0f0f0f">
+      <Label layoutX="282.0" layoutY="448.0" prefHeight="27.0" prefWidth="110.0" text="Версія 1.00.05" textFill="#0f0f0f">
          <font>
             <Font name="System Bold" size="14.0" />
          </font>
@@ -83,11 +83,10 @@
          </effect>
       </Label>
    </children>
-   <styleClass>
-      <String fx:value="text-field" />
-      <String fx:value="about" />
-   </styleClass>
    <effect>
       <Blend />
    </effect>
+   <opaqueInsets>
+      <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+   </opaqueInsets>
 </AnchorPane>

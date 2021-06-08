@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="650.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.LineChartController">
+<AnchorPane prefHeight="650.0" prefWidth="1155.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.LineChartController">
    <children>
-      <VBox prefHeight="650.0" prefWidth="720.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="120.0" AnchorPane.topAnchor="0.0">
+      <VBox prefHeight="650.0" prefWidth="961.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="194.0" AnchorPane.topAnchor="0.0">
          <children>
-            <LineChart id="chart-line-symbol" fx:id="lineChart" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="400.0" prefWidth="890.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Графік  Широта / Довгота" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
+            <LineChart fx:id="lineChart" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="400.0" prefWidth="890.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Широта / Довгота" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
               <xAxis>
                 <NumberAxis forceZeroInRange="false" label="Широта, град" side="BOTTOM">
                      <opaqueInsets>
@@ -27,15 +26,11 @@
                <VBox.margin>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </VBox.margin>
-               <styleClass>
-                  <String fx:value="box" />
-                  <String fx:value="chart-line-symbol" />
-               </styleClass>
             </LineChart>
       
-          <LineChart id="chart-line-symbol" fx:id="lineChartAlt" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" layoutY="511.0" legendVisible="false" prefHeight="195.0" prefWidth="710.0" style="-fx-border-color: #d0d0d0;" styleClass="chart-line-symbol" stylesheets="@../styles/day.css" title="Графік  Висота / Час" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" VBox.vgrow="ALWAYS">
+          <LineChart fx:id="lineChartAlt" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" layoutY="511.0" legendVisible="false" prefHeight="195.0" prefWidth="710.0" style="-fx-border-color: #d0d0d0;" stylesheets="@../styles/day.css" title="Час / Висота" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" VBox.vgrow="ALWAYS">
               <xAxis>
-                  <NumberAxis label="Час, с" prefHeight="32.0" prefWidth="640.0" side="BOTTOM">
+                  <NumberAxis label="Час, мс" prefHeight="32.0" prefWidth="640.0" side="BOTTOM">
                       <opaqueInsets>
                           <Insets />
                       </opaqueInsets>
@@ -54,7 +49,8 @@
 
          </children>
       </VBox>
-      <Button fx:id="velocityChartButton" layoutX="773.0" layoutY="611.0" mnemonicParsing="false" onAction="#onClickVelocityChart" text="Графік швидкості" AnchorPane.bottomAnchor="5.0" AnchorPane.rightAnchor="5.0" />
-      <Button fx:id="scatterChartButton" layoutX="773.0" layoutY="573.0" mnemonicParsing="false" onAction="#onClickScatterChart" prefHeight="25.0" prefWidth="112.0" text="У вигляді точок" AnchorPane.bottomAnchor="45.0" AnchorPane.rightAnchor="5.0" />
+      <Button fx:id="velocityChartButton" layoutX="773.0" layoutY="611.0" mnemonicParsing="false" onAction="#onClickVelocityChart" prefHeight="25.0" prefWidth="185.0" text="Графік швидкості" AnchorPane.bottomAnchor="5.0" AnchorPane.rightAnchor="5.0" />
+      <Button fx:id="scatterChartButton" layoutX="773.0" layoutY="573.0" mnemonicParsing="false" onAction="#onClickScatterChart" prefHeight="25.0" prefWidth="185.0" text="У вигляді точок" AnchorPane.bottomAnchor="45.0" AnchorPane.rightAnchor="5.0" />
+      <TextArea fx:id="outputText" layoutX="779.0" layoutY="7.0" mouseTransparent="true" prefHeight="565.0" prefWidth="185.0" wrapText="true" AnchorPane.bottomAnchor="80.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
    </children>
 </AnchorPane>

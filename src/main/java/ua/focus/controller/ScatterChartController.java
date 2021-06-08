@@ -1,15 +1,20 @@
 package ua.focus.controller;
 
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.ScatterChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.stage.Stage;
+import lombok.SneakyThrows;
 import ua.focus.javaclass.servisClass.OpenStage;
-import java.io.IOException;
+
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -20,8 +25,8 @@ public class ScatterChartController implements Initializable {
     OpenStage os = new OpenStage();
     @FXML
     public ScatterChart scatterChart, scatterChartAlt;
-    @FXML
-    public Button lineChartButton;
+    public Button lineChartButton, velocityChartButton;
+    public TextArea outputText;
 
     @Override
     public void initialize( URL location, ResourceBundle resources) {
@@ -39,22 +44,24 @@ public class ScatterChartController implements Initializable {
         y.setLabel("Longitude");
 
         XYChart.Series series1 = new XYChart.Series();
-        //series1.setName("GPS");
         getGPSData();
         series1.setData(gps);
 
         scatterChart.getData().addAll(series1);
 
-
         XYChart.Series seriesAlt = new XYChart.Series();
-        //seriesAlt.setName("Висота");
         getAltData();
         seriesAlt.setData(alt);
 
         scatterChartAlt.getData().addAll(seriesAlt);
+
+        consolidatedData(outputText);
+        getCurrentData();
+        getCurrentDataAlt();
     }
 
-    public void onClickLineChart( ActionEvent actionEvent) throws IOException {
+    @SneakyThrows
+    public void onClickLineChart( ActionEvent actionEvent) {
         os.viewURL = "/view/lineChart.fxml";
         os.title = "Графік GPS   " + openFile;
         os.maximized = false;
@@ -62,5 +69,39 @@ public class ScatterChartController implements Initializable {
 
         Stage stage = (Stage) lineChartButton.getScene().getWindow();
         stage.close();
+    }
+
+    @SneakyThrows
+    public void onClickVelocityChart(ActionEvent actionEvent) {
+        os.viewURL = "/view/chartVelocity.fxml";
+        os.title = "Графік швидкості - " + openFile;
+        os.maximized = false;
+        os.openStage();
+        Stage stage = (Stage) velocityChartButton.getScene().getWindow();
+        stage.close();
+    }
+
+    public void getCurrentData() {
+        ObservableList<XYChart.Data> dataList = ((XYChart.Series) scatterChart.getData().get(0)).getData();
+        for (XYChart.Data data : dataList) {
+            Node node = data.getNode();
+            Tooltip tooltip = new Tooltip("Широта: " + data.getXValue().toString() + '\n' + "Довгота: " + data.getYValue().toString());
+            Tooltip.install(node, tooltip);
+
+            node.setOnMouseEntered(event -> node.getStyleClass().add("onHover"));
+            node.setOnMouseExited(event -> node.getStyleClass().remove("onHover"));
+        }
+    }
+
+    public void getCurrentDataAlt() {
+        ObservableList<XYChart.Data> dataList = ((XYChart.Series) scatterChartAlt.getData().get(0)).getData();
+        for (XYChart.Data data : dataList) {
+            Node node = data.getNode();
+            Tooltip tooltip = new Tooltip("Час: " + data.getXValue().toString() + '\n' + "Висота: " + data.getYValue().toString());
+            Tooltip.install(node, tooltip);
+
+            node.setOnMouseEntered(event -> node.getStyleClass().add("onHover"));
+            node.setOnMouseExited(event -> node.getStyleClass().remove("onHover"));
+        }
     }
 }

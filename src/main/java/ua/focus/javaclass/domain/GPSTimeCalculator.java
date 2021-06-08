@@ -17,10 +17,8 @@ public class GPSTimeCalculator {
 
         GPSTime gpsTime = new GPSTime();
 
-
         //time
         gpsTime.setTime(gps.getTime());
-
 
         //LocalTime
         //long unixSeconds = Long.parseLong(Double.toString(gps.getTs()));
@@ -49,7 +47,6 @@ public class GPSTimeCalculator {
 
         //TimeUTC
         gpsTime.setTimeUTC(gps.getTs());
-
 
         return gpsTime;
     }

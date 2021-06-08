@@ -8,14 +8,20 @@
    <children>
       <LineChart fx:id="lineChartTime" alternativeColumnFillVisible="true" axisSortingPolicy="NONE" createSymbols="false" legendVisible="false" prefHeight="640.0" prefWidth="900.0" style="-fx-border-color: grey;" title="Графік  Швидкість / Час" AnchorPane.bottomAnchor="343.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
         <xAxis>
-          <NumberAxis label="Час, с" side="BOTTOM">
+          <NumberAxis label="Час, мс" side="BOTTOM">
                <opaqueInsets>
                   <Insets />
-               </opaqueInsets></NumberAxis>
+               </opaqueInsets>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding></NumberAxis>
         </xAxis>
         <yAxis>
           <NumberAxis label="Швидкість, м/с" side="LEFT" />
         </yAxis>
+         <VBox.margin>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </VBox.margin>
       </LineChart>
    </children>
 </VBox>
