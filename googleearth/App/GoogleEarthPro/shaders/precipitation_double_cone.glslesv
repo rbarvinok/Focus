@@ -1,0 +1,20 @@
+attribute vec4 ig_Vertex;
+attribute vec4 ig_MultiTexCoord0;
+
+uniform mat4 ig_ModelViewProjectionMatrix;
+
+// vertex_args contains 1 value:
+//   x:  y-elongation scale
+uniform vec4 vertex_args;
+
+varying vec4 vout_tex_coord;
+
+void main() {
+  vec4 position = ig_Vertex;
+  vec4 tex_coord = ig_MultiTexCoord0;
+
+  float elongation = vertex_args[0];
+  gl_Position = ig_ModelViewProjectionMatrix * position;
+  vout_tex_coord = tex_coord;
+  vout_tex_coord.y *= elongation;
+}

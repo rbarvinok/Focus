@@ -1,0 +1,112 @@
+$input "glsles.h"
+#ifdef USE_IMPROVED_SHADER_VARIATION
+$input "atmosphere.glsllib"
+#else
+const float kPi = 3.141592657;
+#endif
+$input "water.glsllib"
+
+#if defined(PACKED_VERTS)
+#define igv_Vertex ig_VertexAttr0
+#define igv_MultiTexCoord0 ig_VertexAttr1
+attribute vec3 igv_Vertex;
+attribute vec3 igv_MultiTexCoord0;
+#else
+#define igv_Vertex ig_Vertex
+#define igv_MultiTexCoord0 ig_MultiTexCoord0
+attribute vec4 igv_Vertex;
+attribute vec4 igv_MultiTexCoord0;
+#endif
+
+attribute vec4 ig_Color;
+
+// Since water_to_sun is currently unused, this is a hack that keeps
+// Alchemy from complaining about unused uniforms.
+const float hack_to_disable_alchemy_warning = 0.0001;
+
+// Directions of translation of waves (i.e. bump map look ups). These
+// must be unit vectors aligned to the uv axes in order to facilitate looping.
+const vec2 wave_dir_0 = vec2(0.0, -1.0);
+const vec2 wave_dir_1 = vec2(1.0, 0.0);
+const vec2 wave_dir_2 = vec2(-1.0, 0.0);
+const vec2 wave_dir_3 = vec2(0.0, 1.0);
+
+const float _1_over_255 = 1.0 / 255.0;
+
+// Vertex shader's output.
+#if defined(USE_IMPROVED_SHADER_VARIATION)
+// Vertex position in water coordinates translated by one Earth radius (so z
+// is the altitude above water, not the distance to the Earth center) and
+// vertex alpha.
+varying vec4 vout_water_pos_and_alpha;
+#else
+varying vec4 vout_normal_and_alpha;
+varying vec4 vout_water_to_eye_dir_and_fog_factor;
+// XY contains first coordinates, ZW contains second coordinates
+varying vec4 vout_bump_coords_01;
+// XY contains third coordinates, ZW contains fourth coordinates
+varying vec4 vout_bump_coords_23;
+#endif
+
+uniform mat4 clip_to_water_mat;
+// X: density used in fog exp2 function.
+uniform vec4 fog_density;
+// XYZ: eye position in water coordinates.
+// W: animation time that wraps between 0 and 1.
+uniform vec4 eye_pos_and_anim_time;
+// Scale of waves at each visible level.
+// Bigger values correspond to more (and smaller) waves.
+uniform vec4 wave_scales;
+uniform vec4 quadrantMask;
+
+// Vertex shader program.
+// All math is done in water coordinates.
+void main() {
+  vec4 position = vec4(igv_Vertex.xyz, 1.0);
+  vec2 tex_coord = igv_MultiTexCoord0.xy;
+  float alpha = igv_MultiTexCoord0.z;
+  // Water position in clip coordinates.
+  vec4 water_pos_clip = ig_ModelViewProjectionMatrix * position;
+  // Water position in water coordinates.
+  vec3 water_pos = (clip_to_water_mat * water_pos_clip).xyz;
+#if defined(USE_IMPROVED_SHADER_VARIATION)
+  gl_Position = water_pos_clip;
+  vout_water_pos_and_alpha = vec4(water_pos, alpha);
+#else
+  // For some (precision?) reason, water_pos is inexact and normalizing
+  // it yields better visual results (especially to the fresnel computation).
+  // PS: This normalization does not shift the output vertex position, which
+  //     is controlled by water_pos_clip.
+  // TODO(quarup): investigate this.
+  water_pos = normalize(water_pos);
+
+  // Undisturbed normal as if ocean surface were perfectly tangent to planet.
+  vec3 normal = water_pos;
+
+  vec3 eye_pos = eye_pos_and_anim_time.xyz;
+  vec3 water_to_eye_dir = normalize(eye_pos - water_pos);
+
+  // Compute fog factor.
+  float fog_temp = fog_density.x * water_pos_clip.z;
+  float fog_factor = exp(-(fog_temp * fog_temp));
+
+  gl_Position = water_pos_clip;
+  vout_normal_and_alpha = vec4(normal, alpha);
+  vout_water_to_eye_dir_and_fog_factor =
+      vec4(water_to_eye_dir, fog_factor);
+  // Compute bump coordinates with different scales and translations to
+  // minimize repetition.
+  float anim_time = eye_pos_and_anim_time.w;
+  vout_bump_coords_01.xy =
+      tex_coord * wave_scales[0] + wave_dir_0 * 2.0 * anim_time;
+  vout_bump_coords_01.zw =
+      tex_coord * wave_scales[1] + wave_dir_1 * 4.0 * anim_time;
+  vout_bump_coords_23.xy =
+      tex_coord * wave_scales[2] + wave_dir_2 * 4.0 * anim_time;
+  vout_bump_coords_23.zw =
+      -tex_coord * wave_scales[3] + wave_dir_3 * anim_time;
+#endif
+#if defined(ENABLE_VERTEX_REJECT)
+  gl_Position = getMaskedVertex(gl_Position, quadrantMask, ig_Color);
+#endif
+}

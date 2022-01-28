@@ -1,0 +1,790 @@
+$input "glsles.h"
+#ifdef USE_IMPROVED_SHADER_VARIATION
+$input "atmosphere.glsllib"
+#endif
+#if defined(VIEWSHED_DEPTH_WRITE) || defined(VIEWSHED_RENDER)
+$input "viewshed.h"
+#endif
+
+attribute vec3 ig_Normal;
+attribute vec4 ig_Color;
+
+// has_lighting tracks the igVisualContext lighting enabled state.
+// Diorama buildings that do not have normals have lighting turned off in the
+// scene-graph and should do lighting using the vertex normal.
+// Detecting 0-length normals in the shader does not appear to
+// work for diormam buildings (perhaps because the normal data is garbage,
+// instead of being absent like it is in the terrain data).
+// TODO(baustin): Remove the has_lighting test once the 0-length check can be
+// made to work for diorama buildings.
+// NOTE(cdonner): If this declaration ever goes away, the one in lighting.h must
+// be uncommented!
+uniform float has_lighting;
+
+// Lighting depends on ig_Normal and ig_Color being declared, so the $input must
+// be after the attributes.
+#if defined(MODEL) || defined(USE_IMPROVED_SHADER_VARIATION)
+$input "lighting.h"
+#endif
+
+#if defined(PACKED_VERTS)
+#define igv_Vertex ig_VertexAttr0
+#define igv_MultiTexCoord0 ig_VertexAttr1
+attribute vec3 igv_Vertex;
+attribute vec2 igv_MultiTexCoord0;
+#else
+#define igv_Vertex ig_Vertex
+#define igv_MultiTexCoord0 ig_MultiTexCoord0
+attribute vec4 igv_Vertex;
+attribute vec4 igv_MultiTexCoord0;
+#endif
+
+uniform vec3 worldOriginInView;
+uniform vec4 dirToCameraAndFogDensity;
+uniform vec4 groundSunOffVertexParams;
+uniform vec4 projScalingFactor;
+uniform vec4 quadrantMask;
+
+// Specify variables which are shared by multiple shader configurations.
+#if defined(ATMOSPHERE_ON) && defined(GROUND)
+  #if defined(SUN_ON)
+    #define NEED_POS_IN_VIEW
+  #endif
+  // Would use #elif, except for shader-compiler bugs on Galaxy S2 w/ Mali 400.
+  #if defined(SUN_OFF)
+    #if !defined(USE_SIMPLIFIED_SHADER_VARIATION)
+      #define NEED_POS_IN_VIEW
+    #endif
+  #endif
+#endif  // defined(ATMOSPHERE_ON) && defined(GROUND)
+
+#if defined(ATMOSPHERE_ON) && defined(SKY)
+  #if defined(SUN_ON)
+    #define NEED_POS_IN_VIEW
+  #endif
+#endif  // defined(ATMOSPHERE_ON) && defined(SKY)
+
+#if defined(ATMOSPHERE_OFF)
+  #if defined(SUN_ON)
+    #define NEED_POS_IN_VIEW
+  #endif
+#endif  // defined (ATMOSPHERE_OFF)
+
+
+// Now that we know which variables will be needed, declare them.
+
+// All shaders need vertex position in clip-space.
+vec4 g_posInClip;
+
+#if defined(NEED_POS_IN_VIEW)
+highp vec3 g_posInView;
+#endif
+
+
+void InitGlobals() {
+  // OpenGL ES spec says that "w" component should be set to 1.0
+  // if not specified, but we don't trust our drivers.
+  vec4 pos = vec4(igv_Vertex.xyz, 1.0);
+
+#if defined(VIEWSHED_DEPTH_WRITE) || defined(VIEWSHED_RENDER)
+  InitViewshed(pos);
+#endif
+
+  // All shaders need vertex position in clip-space.
+  g_posInClip = ig_ModelViewProjectionMatrix * pos;
+  // Clamp vertex depth to the far plane. This forces the sky to always
+  // be drawn even if the far plane is closer than the outer atmosphere.
+  // Some GL drivers (mostly Android... see eg: b/6722357) have problems
+  // when z == w, so ensure z is strictly smaller.
+  g_posInClip.z = min(g_posInClip.z, g_posInClip.w * 0.99999);
+
+#if defined(NEED_POS_IN_VIEW)
+  g_posInView = (ig_ModelViewMatrix * pos).xyz * projScalingFactor.x;
+#endif
+
+#if defined(MODEL) || defined(USE_IMPROVED_SHADER_VARIATION)
+  v_global_color = ApplyModelLighting();
+#endif
+}
+
+
+#if defined(SUN_ON)
+// The direction vector to the light source.
+uniform vec4 cameraToSunDirAndExposure;
+// .y has Normalized Camera Dot Light
+// .z has Max Camera Angle subtended by planet
+// .w has Camera Height * Camera Height
+uniform vec4 cameraLightInfo;
+// .x has ground shader start depth
+// .y has scatter power coefficient
+// .z has rayleighToneDown Coefficient
+// .w has atmosphere rayleigh opacity alpha
+uniform vec4 startupConsts;
+// xyz: Extra ambient color that is stronger during sunsets (and sunrises).
+// w: density used in fog exp2 function.
+uniform vec4 sunsetAmbientAndFogDensity;
+#endif
+
+#if defined(ATMOSPHERE_ON) && defined(GROUND)
+// XYZ: The x, y, and w-coordinates of the projective rayleighTure coordinate.
+// We use projective rayleighTures for Arbitrary Ground Overlays.
+// W: fog_factor between 0 (no fog) and 1 (full fog).
+varying vec4 vout_texCoordAndFogFactor;
+#endif // defined(ATMOSPHERE_ON) && defined(GROUND)
+
+#if defined(QUADRANT_ALPHAS)
+uniform vec4 quadrantAlphas;  // Alpha 0-1 per quadrant.
+// TODO(jrohlf): Combine with vec4 if possible.
+varying float vout_alpha;  // Single alpha for entire tri, 0-1.
+#endif
+
+//====================== Constants =================================
+// The number of sample points taken along the ray.
+const int samples = 2;
+// Reciprocal of the sun light color.
+const vec3 invWavelength = 1.0 /
+    vec3(0.17850625, 0.10556001, 0.050906640625);
+// Altitude of Atmosphere in km
+const float atmosphereAltiude = 170.0;
+// Radius of planet in km
+const float planetRadius = 6378.0;
+// Relative Radius of the planet.
+const float innerRadius = 1.0;
+const float innerRadius2 = innerRadius * innerRadius;
+// Radius of the outer atmosphere.
+const float outerRadius = innerRadius +
+                                 (atmosphereAltiude / planetRadius);
+const float outerRadius2 = outerRadius * outerRadius;
+// Rayleigh scattering constant.
+const float kr = 0.0025;
+// Brightness of the sun.
+const float eSun = 25.0;
+// Mie scattering constant.
+const float km = 0.001;
+// Pi.
+const float pi = 3.1415926535897932384626433832795;
+// Convenience constants.
+const float krESun = kr * eSun;
+const float kmESun = km * eSun;
+const float kr4Pi = kr * 4.0 * pi;
+const float km4Pi = km * 4.0 * pi;
+
+// The scale depth (the altitude at which the average atmospheric density is
+// found).
+const float scaleDepth = 0.15;
+const float invScaleDepth = 1.0 / scaleDepth;
+// Reciprocal of the atmosphere's depth.
+const float atmosphereDepthInv = 1.0 / (outerRadius - innerRadius);
+const float scaleOverScaleDepth = atmosphereDepthInv / scaleDepth;
+
+// In Fixed function, we use a trick of Sun's color to be of intensity
+// 3.0 to get better correlation between time of day and nDotL.
+// Using the same trick in shaders.
+const float kSunColor = 3.0;
+
+// Transparent color used for hiding white seams behind terrain cracks.
+// Note: all four components must be 0.0 due to the (more or less) additive
+// blending function.
+const vec4 kTransparent = vec4(0.0);
+
+//====================== Functions ==============================
+
+// The scale equation calculated by Vernier's Graphical Analysis.
+float scale(float cosAngle) {
+  float x = 1.0 - cosAngle;
+  return scaleDepth *
+    exp(-0.00287 + x * (0.459 + x * (3.83 + x * (-6.80 + x * 5.25))));
+}
+
+// Returns the near intersection point of a line and a sphere centered around
+// the origin.
+float getNearIntersection(vec3 vertPos, vec3 rayDir, float distance2,
+                          float fRadius2) {
+  float b = 2.0 * dot(vertPos, rayDir);
+  float c = distance2 - fRadius2;
+  float determ = max(0.0, b * b - 4.0 * c);
+  return 0.5 * (-b - sqrt(determ));
+}
+
+// Returns the far intersection point of a line and a sphere centered around
+// the origin.
+float getFarIntersection(vec3 vertPos, vec3 rayDir, float distance2,
+                         float fRadius2) {
+  float b = 2.0 * dot(vertPos, rayDir);
+  float c = distance2 - fRadius2;
+  float determ = max(0.0, b * b - 4.0 * c);
+  return 0.5 * (-b + sqrt(determ));
+}
+
+// Returns the luminance of an RGB color.
+float getLuminance(vec3 color) {
+  const vec3 luminance = vec3(0.3, 0.59, 0.11);
+  return dot(luminance, color);
+}
+
+//============================== ground sun off vertex
+#if defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_OFF)
+
+// Multiplier for rayleigh result; when 0, scattering calculation are omitted
+uniform vec4 rayleighAttenuator;
+
+#if !defined(USE_SIMPLIFIED_SHADER_VARIATION)
+// Texcoord for blending between 2 textures on same geometry and rayleighT
+// param stuffed in z component.
+varying vec4 vout_blendTexCoordAndRayleighT;
+#endif
+
+// Vertex shader program.
+void AtmosphereGroundSunOffVertexShader() {
+  vec4 texCoord = vec4(igv_MultiTexCoord0.xy, 0.0, 1.0);
+  vec4 transformedTexCoord = ig_TextureMatrix * texCoord;
+  vout_texCoordAndFogFactor.xyz = transformedTexCoord.xyw;
+
+#if !defined(USE_SIMPLIFIED_SHADER_VARIATION)
+  // We project the vertex direction (from the planet origin) onto the
+  // camera direction (from the planet origin) to compute the rayleigh
+  // map's t-coordinate.
+  vec3 dirToPos = normalize(g_posInView - worldOriginInView);
+  vec3 dirToCamera = dirToCameraAndFogDensity.xyz;
+  float projected_length = dot(dirToCamera, dirToPos);
+  float rayleighTTranslation = groundSunOffVertexParams.x;
+  float rayleighTScale = groundSunOffVertexParams.y;
+  float rayleighT = (projected_length + rayleighTTranslation) *
+      rayleighTScale;
+  rayleighT = rayleighT * rayleighAttenuator.x + (1.0 - rayleighAttenuator.x);
+
+  // Compute fog factor.
+  float fogDensity = dirToCameraAndFogDensity.w;
+  // Technically, we should divide fogTemp by projScalingFactor.x,
+  // but in the altitude range that fog kicks in at, there is no
+  // visible difference.
+  float fogTemp = fogDensity * g_posInClip.z;
+  float fogFactor = exp(-(fogTemp * fogTemp));
+  vout_texCoordAndFogFactor.w = fogFactor;
+
+  vout_blendTexCoordAndRayleighT.x = rayleighT;
+  vout_blendTexCoordAndRayleighT.y = rayleighT;
+  vout_blendTexCoordAndRayleighT.z = rayleighT;
+  vout_blendTexCoordAndRayleighT.w = rayleighT;
+#endif  // !defined(USE_SIMPLIFIED_SHADER_VARIATION)
+
+  gl_Position = g_posInClip;
+}
+#endif  // defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_OFF)
+
+
+//================================= Ground sun on
+
+#if defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_ON)
+
+#if defined(USE_IMPROVED_SHADER_VARIATION)
+// Vertex position in view coordinates and dot product between normal and Sun.
+varying vec4 vout_viewPosAndNormalDotSun;
+#else
+// Vertex shader's output.
+// RGB: The Rayleigh color.
+varying vec3 vout_rayleigh;
+// RGB: The adjusted Mie color.
+varying vec3 vout_adjustedMie;
+#endif
+
+// Vertex shader program.
+void AtmosphereGroundSunOnVertexShader() {
+  vec4 texCoord = vec4(igv_MultiTexCoord0.xy, 0.0, 1.0);
+  vec3 normal = ig_Normal;
+
+  // Direction from center of earth to vertex.
+  highp vec3 sphereNorm = normalize(g_posInView - worldOriginInView);
+
+  // If normals are not supplied or lighting is turned off, use sphere normals.
+  highp vec3 normToUse = sphereNorm;
+#if !defined(USE_IMPROVED_SHADER_VARIATION)
+  // TODO(johnan): See above about discussion for has_lighting.  Might
+  // be able to remove some day if all geometry is sent with good
+  // normals.
+  if (has_lighting == 1.0) {
+    highp float normalLen = dot(ig_Normal, ig_Normal);
+    // Not sure how fast this if-test is.
+    // TODO(jrohlf,baustin): See if ? or mix() might be faster (mix() isn't
+    // working for diorama buildings, possibly because the normals aren't
+    // normalized.
+    if (normalLen > 0.0) {
+      // NOTE: normal xform should use inverse transpose but I don't think we
+      // have any scales in modelview.
+      normToUse = (ig_ModelViewMatrix * vec4(ig_Normal, 0.0)).xyz;
+      normToUse = normalize(normToUse);
+    }
+  }
+#endif
+  highp float nDotL = dot(normToUse, cameraToSunDirAndExposure.xyz);
+
+#if !defined(USE_IMPROVED_SHADER_VARIATION)
+  // Multiply by Sun Color which is really high intensity and saturate
+  nDotL = saturate(kSunColor * nDotL);
+
+  // Create new coordinate system with the view orientation but world origin.
+  // All computation is done in this new coordinate system.
+  highp vec3 cameraPos = -worldOriginInView;
+  highp float cameraHeight = cameraLightInfo.x;
+  highp float cameraHeight2 = cameraLightInfo.w;
+
+  // Get the ray from the camera to the vertex and its length.
+  highp vec3 rayDir = g_posInView;
+  highp float farDist = length(rayDir);
+  rayDir /= farDist;
+
+  highp vec3 startPos = cameraPos;
+  // Initial scattering offset.
+  highp float startDepth = startupConsts.x;
+  // We use power function to create gradient for limiting rayleigh
+  // affect closer horizon. Lower the exponent, more scattering we
+  // get all over planet. To get scattering glow on planet when viewed
+  // from distance, horizonExp depends on altitude.
+  highp float horizonExp = startupConsts.y;
+  // Since we have not using exposure function in fragment shader for
+  // ground, rayleigh component adds to the existing color and the result
+  // tends to saturate much too soon. Hence we add a tonedown scale which
+  // is function of altitude and proximity to horizon.
+  highp float rayleighToneDownScale = startupConsts.z;
+
+  // Calculate where our ray hits the atmosphere to find the point where
+  // we start accumulating its color.
+  // TODO(quarup): Get rid of this conditional.
+  if (cameraHeight >= outerRadius) {
+    // Camera is outside the atmosphere.
+    // Calculate the closest intersection of the ray with the outer atmosphere
+    // (which is the near point of the ray passing through the atmosphere).
+    highp float nearDist = getNearIntersection(cameraPos, rayDir, cameraHeight2,
+                                      outerRadius2);
+    // Ray's start position within the atmosphere.
+    startPos += rayDir * nearDist;
+    // Ray's distance within the atmosphere.
+    farDist -= nearDist;
+  }
+
+  // Initialize constants needed for the scattering equations.
+  // sphereNorm is normalized
+  highp float cameraAngle = max(0.0, dot(-rayDir, sphereNorm));
+  highp float lightAngle = dot(cameraToSunDirAndExposure.xyz, sphereNorm);
+  highp float cameraScale = scale(cameraAngle);
+  highp float lightScale = scale(lightAngle);
+  highp float cameraOffset = startDepth * cameraScale;
+  highp float scaleSum = lightScale + cameraScale;
+
+  // Initialize the scattering loop variables.
+  highp float sampleLength = farDist / float(samples);
+  highp float scaledLength = sampleLength * atmosphereDepthInv;
+  highp vec3 sampleRay = rayDir * sampleLength;
+  highp vec3 samplePoint = startPos + sampleRay * 0.5;
+
+  // Now loop through sample points on the ray and accumulate the color
+  // using the scattering equations (including surface-scattering).
+  highp vec3 frontColor = vec3(0.0, 0.0, 0.0);
+  highp vec3 attenuate;
+  for(int i = 0; i < samples; i++) {
+    highp float sampleHeight = length(samplePoint);
+    highp float sampleDepth =
+        exp(scaleOverScaleDepth * (innerRadius - sampleHeight));
+    highp float sampleScatter = sampleDepth * scaleSum - cameraOffset;
+    attenuate = exp(-sampleScatter * (invWavelength * kr4Pi + km4Pi));
+    frontColor += attenuate * (sampleDepth * scaledLength);
+    samplePoint += sampleRay;
+  }
+
+  // Compute how "close" the vertex is to the horizon. Vertices close
+  // to the horizon correspond to one, and vertices under the camera
+  // correspond to zero.
+  highp float closeToHorizon = 1.0 - cameraAngle;
+  highp float closeToCamera = 1.0 - closeToHorizon*closeToHorizon;
+  // Compute rayleigh scale factor. Higher closer to horizon and
+  // at higher altitudes.
+  highp float scaledRayleighFactor = rayleighToneDownScale *
+                               pow(closeToHorizon, horizonExp);
+
+  // Base ambient color for dark shaded ground objects.
+  highp vec3 kBaseAmbientColor = vec3(0.12, 0.12, 0.15);
+  // Add ambient light to geometry with low N.L shading. This allows the
+  // user to always see the dark areas of mountains, buildings, etc.
+  highp float darkShadedAmbientFactor = 1.0 - nDotL;
+  // Compute night ambient color factor so that it is strongest at night
+  // (i.e. low attenuate luminance) and weakest during the day
+  // (i.e. high attenuate luminance). This allows the user to always see
+  // ground objects at night.
+  highp float nightAmbientTemp = getLuminance(attenuate);
+  highp float nightAmbientFactor = 1.0 - nightAmbientTemp * nightAmbientTemp;
+  // Compute ambient contribution. Make ambient light stronger
+  // for nearby vertices, which creates a "head lamp" effect.
+  highp float ambientFactor =
+    closeToCamera * (darkShadedAmbientFactor + nightAmbientFactor);
+  highp vec3 headlampAmbientContribution = kBaseAmbientColor * ambientFactor;
+  // The extra sunset ambient contribution keeps the planet from looking too
+  // dark during sunset and sunrise.
+  highp vec3 sunsetAmbient = sunsetAmbientAndFogDensity.xyz;
+  highp vec3 ambientContribution = headlampAmbientContribution + sunsetAmbient;
+
+  // Compute how close to noon it is.
+  highp float closeToNoon = cameraLightInfo.y;
+  // When it is close to noon, add light close to the camera in order
+  // to show full contrast of the textures near the user.
+  highp float closeToNoonFactor = closeToCamera * closeToNoon;
+
+  // Compute fog factor.
+  highp float fogDensity = sunsetAmbientAndFogDensity.w;
+  highp float fogTemp = fogDensity * farDist;
+  highp float fogFactor = exp(-(fogTemp * fogTemp));
+
+  // Compute Rayleigh color and make it strongest at the horizon.
+  const vec3 kMaxRayleighContribution = vec3(0.5, 0.5, 0.8);
+  vout_rayleigh.rgb = min(kMaxRayleighContribution,
+       frontColor * (invWavelength * krESun + kmESun) * scaledRayleighFactor);
+  // Compute Mie color.
+  highp vec3 mieColor = attenuate;
+  highp vec3 adjustedMieColor = saturate(
+    (mieColor + vec3(closeToNoonFactor)) * nDotL + ambientContribution);
+  vout_adjustedMie.rgb = adjustedMieColor;
+#else  // #if defined(USE_IMPROVED_SHADER_VARIATION)
+  vout_viewPosAndNormalDotSun = vec4(g_posInView, nDotL);
+  float fogFactor = 0.0;
+#endif
+
+  // Transform vertex position.
+  gl_Position = g_posInClip;
+
+  // Set transformed texture coordinates.
+  highp vec4 transformedTexCoord = ig_TextureMatrix * texCoord;
+  vout_texCoordAndFogFactor.xyz = transformedTexCoord.xyw;
+  vout_texCoordAndFogFactor.w = fogFactor;
+}
+#endif // defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_ON)
+
+
+//====================================== sky sun off
+
+#if defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_OFF)
+
+uniform vec4 skySunOffVertexParams;
+
+// X: Rayleigh map's t-coordinate.
+varying vec4 vout_rayleighT;
+
+// Vertex shader program.
+void AtmosphereSkySunOffVertexShader() {
+  vec4 position = vec4(igv_Vertex.xyz, 1.0);
+
+  // From the position's Y-coordinate (in atmosphere space), we can
+  // compute its rayleigh color from the rayleigh map.
+  float rayleighTTranslation = skySunOffVertexParams.x;
+  float rayleighTScale = skySunOffVertexParams.y;
+  // Look-up's t-coordinate.
+  float rayleighT = (position.y + rayleighTTranslation) * rayleighTScale;
+
+  gl_Position = g_posInClip;
+
+  vout_rayleighT = vec4(rayleighT);
+}
+#endif  // defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_OFF)
+
+
+//======================================= sky sun on
+#if defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_ON)
+
+#if defined(USE_IMPROVED_SHADER_VARIATION)
+// Transformation from view to Sun coordinates. This coordinate system is
+// centered on the Earth and its z axis points towards the Sun.
+uniform mat4 viewToSun;
+
+varying vec3 vout_viewPos;  // Vertex position in view coordinates.
+varying vec3 vout_sunPos;  // Vertex position in Sun coordinates.
+#else
+varying vec4 vout_rayleighColorAndSkyOpacity;  // The Rayleigh color
+varying vec4 vout_vertToCameraDir;  // Dir from ray to camera.
+#endif
+
+// Vertex shader program.
+void AtmosphereSkySunOnVertexShader() {
+
+  gl_Position = g_posInClip;
+
+#if !defined(USE_IMPROVED_SHADER_VARIATION)
+  // Make up a new coordinate system with the view orientation but world origin.
+  // All computation is done in this new coordinate system.
+  vec3 cameraPos = -worldOriginInView;
+  float cameraHeight = cameraLightInfo.x;
+  float cameraHeightInv = 1.0 / cameraHeight;
+  float cameraHeight2 = cameraLightInfo.w;
+  vec3 vertPos = g_posInView - worldOriginInView;
+
+  // Get the ray from the camera to the vertex and its length (which is the
+  // far point of the ray passing through the atmosphere).
+  vec3 rayDir = vertPos - cameraPos;
+  float farDist = length(rayDir);
+  rayDir /= farDist;
+
+  vec3 startPos;
+  float startAngle;
+  float startOffset;
+  // Calculate where our ray hits the atmosphere to find the point where
+  // we start accumulating its color.
+  // TODO(quarup): Get rid of this conditional.
+  if (cameraHeight < outerRadius) {
+    // If we're inside the atmosphere, then start accumulating from the
+    // camera position.
+    startPos = cameraPos;
+    // Initial scattering constants.
+    float startDepth = exp(scaleOverScaleDepth * (innerRadius - cameraHeight));
+    startAngle = dot(rayDir, startPos) * cameraHeightInv;
+    startOffset = startDepth * scale(startAngle);
+  } else {
+    // Camera is outside the atmosphere.
+    // Calculate the closest intersection of the ray with the outer atmosphere
+    // (which is the near point of the ray passing through the atmosphere).
+    float nearDist = getNearIntersection(cameraPos, rayDir, cameraHeight2,
+                                         outerRadius2);
+    // Ray's start position within the atmosphere.
+    startPos = cameraPos + rayDir * nearDist;
+    // Ray's distance within the atmosphere.
+    farDist -= nearDist;
+    // Initial scattering constants.
+    startAngle = dot(rayDir, startPos) / outerRadius;
+    float startDepth = exp(-invScaleDepth);
+    startOffset = startDepth * scale(startAngle);
+  }
+
+  // Initialize the scattering loop variables.
+  float sampleLength = farDist / float(samples);
+  float scaledLength = sampleLength * atmosphereDepthInv;
+  vec3 sampleRay = rayDir * sampleLength;
+  vec3 samplePoint = startPos + sampleRay * 0.5;
+
+  // Now loop through sample points on the ray and accumulate the color
+  // using the scattering equations.
+  vec3 frontColor = vec3(0.0, 0.0, 0.0);
+  vec3 attenuate;
+  for(int i = 0; i < samples; i++) {
+    // TODO(quarup): Simplify this.
+    float sampleHeight = length(samplePoint);
+    float sampleDepth = exp(scaleOverScaleDepth * (innerRadius - sampleHeight));
+    float lightAngle = dot(cameraToSunDirAndExposure.xyz, samplePoint)
+                           / sampleHeight;
+    float cameraAngle = dot(rayDir, samplePoint) / sampleHeight;
+    float sampleScatter =
+      (startOffset + sampleDepth*(scale(lightAngle) - scale(cameraAngle)));
+    attenuate = exp(-sampleScatter * (invWavelength * kr4Pi + km4Pi));
+    frontColor += attenuate * (sampleDepth * scaledLength);
+    samplePoint += sampleRay;
+  }
+
+  // Handle White Seams here.
+  // Idea is that we make the part of sphere occluded by planet transparent.
+  // Therefore terrain cracks show the color buffer's clear color instead.
+  // (Note: opaque colors (instead of transparent) are distorted by the HDR
+  //  tonemap computation and the (more or less) additive blending function.)
+  // cosAngleByPlanet: cosine of angle subtended by planet at camera
+  // cosVertAngle : cosine of angle subtended by current vertex at camera
+  float cosAngleByPlanet = cameraLightInfo.z;
+  float cosVertAngle = -dot(rayDir, cameraPos) * cameraHeightInv;
+  vec4 computedRayleighColorAndSkyOpacity =
+      vec4(frontColor * (invWavelength * krESun), startupConsts.w);
+  vout_rayleighColorAndSkyOpacity = cosVertAngle > cosAngleByPlanet ?
+      kTransparent : computedRayleighColorAndSkyOpacity;
+  vout_vertToCameraDir.xyz = cameraPos - vertPos;
+  // Fix for a driver bug on ATI Mobility FireGL V3200 (Driver 8.362.0.0)
+  // for OpenGL mode.
+  // Problem: The textures looked distorted.
+  // Reason: Two sets of shaders (atmosphere_ground and atomsphere_model_space)
+  //         used different length of TEXCOORD1 with my last change. With this
+  //         change, TEXCOORD1.w in atmosphere_groud fragment shader was getting
+  //         0 irrespective of whatever value you set in vertexshader. It seems
+  //         that some validation for length of texture coordinates was missing
+  //         in driver when fragment programs were switched.
+  // Workaround: Add TEXCOORD1.w back in all shaders. Avoid any computation by
+  //             just setting it to 1.0
+  vout_vertToCameraDir.w = 1.0;
+#else  // #if defined(USE_IMPROVED_SHADER_VARIATION)
+  vout_viewPos = g_posInView;
+  vout_sunPos = (viewToSun * vec4(g_posInView, 0.0)).xyz;
+#endif
+}
+#endif // defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_ON)
+
+
+// ==========================================================================
+#if defined(ATMOSPHERE_ON)
+  #if defined(GROUND)
+    void AtmosphereGroundVertexShader() {
+    #if defined(SUN_ON)
+      AtmosphereGroundSunOnVertexShader();
+    #elif defined(SUN_OFF)
+      AtmosphereGroundSunOffVertexShader();
+    #else
+      #error Invalid shader config 1
+    #endif
+    #if defined(ENABLE_VERTEX_REJECT)
+      gl_Position = getMaskedVertex(gl_Position, quadrantMask, ig_Color);
+    #endif
+    #if defined(DEBUG_QUADRANT_COLORS)
+      vout_debug_color = getDebugVertexColor(quadrantMask, ig_Color);
+    #endif
+    #if defined(QUADRANT_ALPHAS)
+      vout_alpha = getMaskedAlpha(quadrantAlphas, ig_Color);
+    #endif
+    }
+  #elif defined(SKY)
+    void AtmosphereSkyVertexShader() {
+    #if defined(SUN_ON)
+      AtmosphereSkySunOnVertexShader();
+    #elif defined(SUN_OFF)
+      AtmosphereSkySunOffVertexShader();
+    #else
+      #error Invalid shader config 2
+    #endif
+    }
+  #elif defined(USE_IMPROVED_SHADER_VARIATION)
+    void AtmosphereLookupTableShader() {
+      gl_Position = vec4(igv_Vertex.xy, 0.0, 1.0);
+    }
+  #endif
+#endif // ATMOSPHERE_ON
+
+
+#if defined(ATMOSPHERE_OFF)
+//=================================== Sun off
+#if defined(SUN_OFF)
+varying vec4 vout_groundTexCoord;  // Transformed texture coordinate.
+
+// Vertex shader program.
+void NoAtmosphereSunOffVertexShader() {
+  // Transform coordinate and texture coordinates.
+  gl_Position = g_posInClip;
+  vec4 groundTexCoord = vec4(igv_MultiTexCoord0.xy, 0.0, 1.0);
+  vout_groundTexCoord = ig_TextureMatrix * groundTexCoord;
+}
+#endif // SUNOFF
+
+
+//=================================== Sun on
+#if defined(SUN_ON)
+// xy: base texture coordinates.
+// zw: blend texture coordinates.
+varying vec4 vout_transformedCoords;  // Transformed texture coordinate.
+// x: diffuse factor that contains N.L and ambient contribution.
+varying float vout_diffuse_factor;
+
+// Vertex shader program.
+void NoAtmosphereSunOnVertexShader() {
+  // NOTE: We assume that normalLen will be 1.0 if normals are supplied, and
+  // 0.0 otherwise... if not, we will compute a bogus normal below.
+  highp float normalLen = dot(ig_Normal, ig_Normal);
+
+  // The intent is to avoid a branching statement, and instead using normalLen
+  // as the argument to mix() to choose between the "sphere-normal" vs. the
+  // normal provided as a vertex-attribute.
+  //
+  // Neither the sphere-normal nor the transformed attribute-normal are
+  // normalized (since we don't apply the projection-scale in the latter case).
+  // However this is OK because:
+  // - we normalize the result
+  // - normalLen is either 0 or 1 (otherwise, we would be mixing two vectors
+  //   which are scaled arbitrarily with respect to the other, and would expect
+  //   garbage as a result)
+  // For the same reason, we needn't use the inverse-transpose of the model-view
+  // matrix.
+  // TODO(jrohlf): See if ? might be faster. Since all vertices in a draw call
+  //               would take the same branch, maybe there isn't a penalty for
+  //               using conditionals on recent hardware?
+  highp vec3 normToUse = mix(
+    g_posInView - worldOriginInView,
+    (ig_ModelViewMatrix * vec4(ig_Normal, 0.)).xyz,
+    normalLen);
+  normToUse = normalize(normToUse);
+
+  highp float nDotL = dot(normToUse, cameraToSunDirAndExposure.xyz);
+
+  // When atmosphere shaders are off, the ambient contribution comes in
+  // the "exposure" variable.
+  float ambient_light = cameraToSunDirAndExposure.w;
+
+  // Transform coordinate and texture coordinates.
+  vec4 groundTexCoord = vec4(igv_MultiTexCoord0.xy, 0.0, 1.0);
+  vout_transformedCoords.xy = (ig_TextureMatrix * groundTexCoord).xy;
+  vout_transformedCoords.zw = vec2(0.0, 0.0);
+  vout_diffuse_factor = min(1.0, ambient_light + max(0.0, nDotL));
+
+  gl_Position = g_posInClip;
+}
+#endif // SUN_ON
+
+
+//========================== Ground overlay no atmosphere
+#if defined(GROUND) && defined(OVERLAY)
+varying vec4 vout_texCoord;
+void NoAtmosphereGroundOverlayVertexShader() {
+  // Very simple vertex shader, handles modelview/projection matrix and
+  // texture matrix just like fixed function, but when specifying a pixel
+  // shader, we must have a vertex shader.
+
+  vec4 position = vec4(igv_Vertex.xyz, 1.0);
+  vec4 texCoord = vec4(igv_MultiTexCoord0.xy, 0.0, 1.0);
+
+  gl_Position = ig_ModelViewProjectionMatrix * position;
+  vout_texCoord = ig_TextureMatrix * texCoord;
+}
+#endif // GROUND AND OVERLAY
+
+//========================== Ground overlay no atmosphere
+#if defined(MAPSTAR)
+varying vec4 vout_texCoord;
+void NoAtmosphereMapStarVertexShader() {
+  // Very simple pixel shader, handles modelview/projection matrix and
+  // texture matrix just like fixed function, but when specifying a pixel
+  // shader, we must have a vertex shader.
+  vec4 texCoord = vec4(igv_MultiTexCoord0.xy, 0.0, 1.0);
+  vout_texCoord = ig_TextureMatrix * texCoord;
+  gl_Position = g_posInClip;
+}
+#endif // MAPSTAR
+
+#endif // ATMOSPHERE_OFF
+
+
+// ==========================================================================
+void main() {
+  InitGlobals();
+#if defined(ATMOSPHERE_ON)
+  #if defined(GROUND)
+    AtmosphereGroundVertexShader();
+  #elif defined(SKY)
+    AtmosphereSkyVertexShader();
+  #elif defined(USE_IMPROVED_SHADER_VARIATION)
+    AtmosphereLookupTableShader();
+  #else
+    #error Invalid shader config 3
+  #endif
+#elif defined(ATMOSPHERE_OFF)
+    #if defined(GROUND) && defined(OVERLAY)
+      NoAtmosphereGroundOverlayVertexShader();
+    #elif defined(MAPSTAR)
+      NoAtmosphereMapStarVertexShader();
+    #else
+      #if defined(SUN_ON)
+        NoAtmosphereSunOnVertexShader();
+      #elif defined(SUN_OFF)
+        NoAtmosphereSunOffVertexShader();
+      #else
+        #error Invalid shader config 4
+      #endif
+    #endif
+    #if defined(ENABLE_VERTEX_REJECT)
+      gl_Position =
+        getMaskedVertex(gl_Position, quadrantMask, ig_Color);
+    #endif
+    #if defined(DEBUG_QUADRANT_COLORS)
+      vout_debug_color = getDebugVertexColor(quadrantMask, ig_Color);
+    #endif
+    #if defined(QUADRANT_ALPHAS)
+      vout_alpha = getMaskedAlpha(quadrantAlphas, ig_Color);
+    #endif
+#else
+  #error Invalid shader config 6
+#endif
+}

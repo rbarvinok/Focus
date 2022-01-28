@@ -1,0 +1,84 @@
+!!ARBvp1.0
+# cgc version 2.2.0017, build date Jan 29 2010
+# command line args: -profile arbvp1 -quiet
+#vendor NVIDIA Corporation
+#version 2.2.0.17
+#profile arbvp1
+#program vmain
+#semantic vmain.batch_model_view_proj
+#semantic vmain.batch_camera_location
+#semantic vmain.lightDirection
+#semantic vmain.treeRotationVector
+#semantic vmain.treePosAndScale
+#semantic vmain.lod_profile
+#semantic vmain.materialDiffuse
+#var float3 sIn.m_vPosition : $vin.POSITION : POSITION : 0 : 1
+#var float3 sIn.m_vNormal : $vin.NORMAL : NORMAL : 0 : 1
+#var float4 sIn.m_vTangent : $vin.TEXCOORD0 : TEXCOORD0 : 0 : 1
+#var float4 sIn.m_vBinormal : $vin.TEXCOORD1 : TEXCOORD1 : 0 : 1
+#var float4 sIn.m_vLodPosition : $vin.TEXCOORD2 : TEXCOORD2 : 0 : 1
+#var float4 sIn.m_vUnused1 : $vin.TEXCOORD3 :  : 0 : 0
+#var float4x4 batch_model_view_proj :  : c[1], 4 : 1 : 1
+#var float3 batch_camera_location :  : c[5] : 2 : 1
+#var float3 lightDirection :  : c[6] : 3 : 1
+#var float4 treeRotationVector :  : c[7] : 4 : 1
+#var float4 treePosAndScale :  : c[8] : 5 : 1
+#var float4 lod_profile :  : c[9] : 6 : 1
+#var float4 materialDiffuse :  : c[10] : 7 : 1
+#var float4 vmain.m_vPosition : $vout.POSITION : HPOS : -1 : 1
+#var float4 vmain.m_vDiffuseTexCoords : $vout.TEXCOORD0 : TEX0 : -1 : 1
+#var float4 vmain.m_vNormalVec : $vout.TEXCOORD1 : TEX1 : -1 : 1
+#const c[0] = 0 1 0.44999999
+PARAM c[11] = { { 0, 1, 0.44999999 },
+		program.local[1..10] };
+TEMP R0;
+TEMP R1;
+MOV R0.xyz, vertex.texcoord[2];
+ADD R0.xyz, vertex.position, -R0;
+MOV R1.xy, c[7];
+MOV R1.w, c[0].x;
+MAD R0.yzw, R0.xxyz, c[7].z, vertex.texcoord[2].xxyz;
+MOV R1.z, -c[7].x;
+DP3 R0.x, R1.yxww, R0.yzww;
+DP3 R0.y, R1.zyww, R0.yzww;
+MOV R0.z, R0.w;
+MAD R0.xyz, R0, c[8].w, c[8];
+MOV R0.w, c[0].y;
+DP4 result.position.w, R0, c[4];
+DP4 result.position.z, R0, c[3];
+DP4 result.position.y, R0, c[2];
+DP4 result.position.x, R0, c[1];
+ADD R0.w, c[9], -c[9].z;
+DP3 R0.x, R1.yxww, vertex.normal;
+MOV R0.z, vertex.normal;
+DP3 R0.y, R1.zyww, vertex.normal;
+DP3 result.texcoord[1].z, R0, c[6];
+DP3 R0.x, R1.yxww, vertex.texcoord[1];
+MOV R0.z, vertex.texcoord[1];
+DP3 R0.y, R1.zyww, vertex.texcoord[1];
+DP3 result.texcoord[1].y, R0, c[6];
+MOV R0.xyz, c[5];
+ADD R0.xyz, -R0, c[8];
+DP3 R0.y, R0, R0;
+MUL R0.w, R0, c[0].z;
+ADD R0.x, R0.w, c[9].z;
+ADD R0.z, -R0.x, c[9].w;
+RSQ R0.y, R0.y;
+RCP R0.y, R0.y;
+ADD R0.x, R0.y, -R0;
+RCP R0.z, R0.z;
+MUL R0.y, R0.x, R0.z;
+MIN R0.z, R0.y, c[0].y;
+MAX R0.w, R0.z, c[0].x;
+ADD R0.w, -R0, c[0].y;
+DP3 R0.x, R1.yxww, vertex.texcoord[0];
+DP3 R0.y, R1.zyww, vertex.texcoord[0];
+MOV R0.z, vertex.texcoord[0];
+DP3 result.texcoord[1].x, R0, c[6];
+MUL result.texcoord[0].w, R0, c[10];
+MOV result.texcoord[0].z, c[0].x;
+MOV result.texcoord[0].x, vertex.texcoord[1].w;
+MOV result.texcoord[0].y, vertex.texcoord[2].w;
+MOV result.texcoord[1].w, c[0].y;
+END
+# 47 instructions, 2 R-regs

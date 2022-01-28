@@ -1,0 +1,47 @@
+ps_2_0
+// cgc version 2.2.0017, build date Jan 29 2010
+// command line args: -profile ps_2_0 -quiet
+//vendor NVIDIA Corporation
+//version 2.2.0.17
+//profile ps_2_0
+//program pmain
+//semantic pmain.diffuseMap
+//semantic pmain.normalMap
+//var float2 sIn.m_vTexCoords : $vin.TEXCOORD0 : TEX0 : 0 : 1
+//var float1 sIn.m_vAlphaScalar : $vin.TEXCOORD1 : TEX1 : 0 : 1
+//var float3 sIn.m_vNormalMapVec : $vin.TEXCOORD2 : TEX2 : 0 : 1
+//var float4 sIn.m_vAmbient : $vin.COLOR1 : COL1 : 0 : 1
+//var float4 sIn.m_vDiffuse : $vin.TEXCOORD3 : TEX3 : 0 : 1
+//var sampler2D diffuseMap :  : texunit 0 : 1 : 1
+//var sampler2D normalMap :  : texunit 1 : 2 : 1
+//var float4 pmain : $vout.COLOR : COL : -1 : 1
+//var <none>4 $kill_0000 : $vout.$kill : $kill : -1 : 0
+//const c[0] = -0.1 0 1
+//const c[1] = 2 -1
+dcl_2d s0
+dcl_2d s1
+def c0, -0.10000000, 0.00000000, 1.00000000, 0
+def c1, 2.00000000, -1.00000000, 0, 0
+dcl t0.xy
+dcl t1.x
+dcl t2.xyz
+dcl v1.xyz
+dcl t3
+texld r3, t0, s0
+texld r2, t0, s1
+mul r0.x, r3.w, t1
+add r1.x, r0, c0
+mul r4.xyz, r2.w, v1
+cmp r1.x, r1, c0.y, c0.z
+mov_pp r1, -r1.x
+mov r0.w, r0.x
+mad r5.xyz, t3, t3.w, -r4
+mad r2.xyz, r2, c1.x, c1.y
+texkill r1.xyzw
+dp3 r1.x, t2, t2
+rsq r1.x, r1.x
+mul r1.xyz, r1.x, t2
+dp3_sat r1.x, r2, r1
+mad r1.xyz, r1.x, r5, r4
+mul r0.xyz, r3, r1
+mov oC0, r0

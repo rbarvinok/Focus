@@ -1,0 +1,110 @@
+// #include "speedtree_utils.h"
+$input "glsles.h"
+$input "speedtree_configuration_glsles.h"
+$input "speedtree_utils_glsles.h"
+
+///////////////////////////////////////////////////////////////////////
+//  Structure SStandardPixel
+
+varying vec4 vout_position;
+varying vec4 vout_diffuseTexCoords; // xy = diffuse texcoords, z = unused, w = alpha scalar
+varying vec4 vout_normalVec;    // xyz = normal map vector
+#ifdef GOOGLE_COMPUTE_FOG
+varying vec4 vout_fogData;       // for sky color fogging
+#endif
+
+
+///////////////////////////////////////////////////////////////////////
+//  SpeedTreeNormalize
+
+vec3 SpeedTreeNormalize(vec3 vVector)
+{
+    return normalize(vVector);
+}
+
+
+///////////////////////////////////////////////////////////////////////
+//  StandardPixel
+//
+//  This one function most likely represents where a good deal of render
+//  time is spent for any given frame.  Branches, fronds, leaf meshes,
+//  and leaf cards all use this standard pixel shader.  It will compute
+//  colored lighting for one light, standard normal mapping, apply
+//  ambient occlusion as computed in the Modeler.
+
+// TODO(chrisco): Setup shader nodes to share this pixel shader in the C++.
+uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+uniform vec4 materialAmbient;
+uniform vec4 materialDiffuse;
+
+void main()
+{
+    vec4 vOutput;
+
+    // setup aliases (taken from incoming data)
+    vec2 c_vDiffuseTexCoords = vout_diffuseTexCoords.xy;
+    vec3 c_vNormalMapVec = SpeedTreeNormalize(vout_normalVec.rgb);
+#ifdef GOOGLE_COMPUTE_FOG
+    vec4 c_vFogData = vout_fogData;
+#endif
+    float  c_fSpecialEffectFade = vout_normalVec.w;
+
+    // setup aliases (taken from global variables)
+    vec3 c_vAmbientMaterial = materialAmbient.rgb;
+    vec3 c_vDiffuseMaterial = materialDiffuse.rgb;
+    float  c_fShininess = materialAmbient.a;
+
+    // diffuse texture lookup with early exit based on alpha mask
+    vec4 texDiffuse = texture2D(diffuseMap, c_vDiffuseTexCoords);
+    float fDiffuseAlpha = texDiffuse.a;
+
+    // compute alpha scalar
+    float fAlphaScalar = vout_diffuseTexCoords.w;
+
+#ifdef SPEEDTREE_ALPHA_TESTING
+    float c_fMaxAlphaScalar = materialDiffuse.a;
+    float fAlphaScalarNorm = fAlphaScalar / c_fMaxAlphaScalar;
+
+    fDiffuseAlpha -= (1.0 - fAlphaScalarNorm) * AlphaTestNoise(c_vDiffuseTexCoords * c_f3dGeometryNoiseScalar);
+#endif
+    float fAlphaOut = fDiffuseAlpha * fAlphaScalar;
+
+#ifdef SPEEDTREE_ALPHA_TESTING
+    fAlphaOut -= 0.1;
+    PossibleEarlyOut(fAlphaOut, 0.0);
+#else
+    PossibleEarlyOut(fAlphaOut);
+#endif
+
+    // normal map computation
+    vec3 texNormal = texture2D(normalMap, c_vDiffuseTexCoords).rgb;
+    vec3 vMainNormal = DecodeVectorFromColor(texNormal);
+    vMainNormal = SpeedTreeNormalize(vMainNormal);
+
+    // ambient contribution
+    vec3 vAmbientComponent;
+    float fNormalMapLighting = dot(vMainNormal, c_vNormalMapVec);
+    vAmbientComponent = c_vAmbientMaterial.rgb;
+
+    // get shadow contribution if enabled (optimizer should remove
+    // multiplications of 1.0 if shadows aren't enabled)
+    float fShadow = 1.0;
+
+    fNormalMapLighting = fShadow * saturate(fNormalMapLighting);
+
+    // combine ambient and diffuse materials
+    vOutput.rgb = lerp(vAmbientComponent, c_vDiffuseMaterial.rgb, fNormalMapLighting);
+    vOutput.a = fAlphaOut;
+
+    // diffuse texture contribution
+    vOutput.rgb *= texDiffuse.rgb;
+
+#ifdef GOOGLE_COMPUTE_FOG
+    // fog the output (non-trivial with sky contribution)
+    vOutput.rgb = FogPixel(c_vFogData, vOutput.xyz);
+#endif
+
+    gl_FragColor = vOutput;
+    DoAlphaTestIfNeeded(gl_FragColor.a);
+}

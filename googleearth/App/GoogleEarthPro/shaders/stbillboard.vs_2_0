@@ -1,0 +1,353 @@
+vs_2_0
+// cgc version 2.2.0017, build date Jan 29 2010
+// command line args: -profile vs_2_0 -quiet
+//vendor NVIDIA Corporation
+//version 2.2.0.17
+//profile vs_2_0
+//program vmain
+//semantic vmain.batch_model_view_proj
+//semantic vmain.batch_camera_location
+//semantic vmain.batch_camera_params
+//semantic vmain.lightDirection
+//semantic vmain.lod_profile
+//semantic vmain.billboard_constants
+//var float3 sIn.m_vPosition : $vin.POSITION0 : ATTR0 : 0 : 1
+//var float3 sIn.m_vCornerPos : $vin.NORMAL0 : ATTR1 : 0 : 1
+//var float4 sIn.m_vCornerAndStart : $vin.TEXCOORD0 : ATTR2 : 0 : 1
+//var float4 sIn.m_vGeomTransform : $vin.TEXCOORD1 : ATTR3 : 0 : 1
+//var float4 sIn.m_vUnused1 : $vin.TEXCOORD2 :  : 0 : 0
+//var float4 sIn.m_vUnused2 : $vin.TEXCOORD3 :  : 0 : 0
+//var float4x4 batch_model_view_proj :  : c[0], 4 : 1 : 1
+//var float3 batch_camera_location :  : c[4] : 2 : 1
+//var float4 batch_camera_params :  : c[5] : 3 : 1
+//var float3 lightDirection :  : c[6] : 4 : 1
+//var float4 lod_profile :  : c[7] : 5 : 1
+//var float4 billboard_constants[0] :  : c[8] : 6 : 1
+//var float4 billboard_constants[1] :  : c[9] : 6 : 1
+//var float4 billboard_constants[2] :  : c[10] : 6 : 1
+//var float4 billboard_constants[3] :  : c[11] : 6 : 1
+//var float4 billboard_constants[4] :  : c[12] : 6 : 1
+//var float4 billboard_constants[5] :  : c[13] : 6 : 1
+//var float4 billboard_constants[6] :  : c[14] : 6 : 1
+//var float4 billboard_constants[7] :  : c[15] : 6 : 1
+//var float4 billboard_constants[8] :  : c[16] : 6 : 1
+//var float4 billboard_constants[9] :  : c[17] : 6 : 1
+//var float4 billboard_constants[10] :  : c[18] : 6 : 1
+//var float4 billboard_constants[11] :  : c[19] : 6 : 1
+//var float4 billboard_constants[12] :  : c[20] : 6 : 1
+//var float4 billboard_constants[13] :  : c[21] : 6 : 1
+//var float4 billboard_constants[14] :  : c[22] : 6 : 1
+//var float4 billboard_constants[15] :  : c[23] : 6 : 1
+//var float4 billboard_constants[16] :  : c[24] : 6 : 1
+//var float4 billboard_constants[17] :  : c[25] : 6 : 1
+//var float4 billboard_constants[18] :  : c[26] : 6 : 1
+//var float4 billboard_constants[19] :  : c[27] : 6 : 1
+//var float4 billboard_constants[20] :  : c[28] : 6 : 1
+//var float4 billboard_constants[21] :  : c[29] : 6 : 1
+//var float4 billboard_constants[22] :  : c[30] : 6 : 1
+//var float4 billboard_constants[23] :  : c[31] : 6 : 1
+//var float4 billboard_constants[24] :  : c[32] : 6 : 1
+//var float4 billboard_constants[25] :  : c[33] : 6 : 1
+//var float4 billboard_constants[26] :  : c[34] : 6 : 1
+//var float4 billboard_constants[27] :  : c[35] : 6 : 1
+//var float4 billboard_constants[28] :  : c[36] : 6 : 1
+//var float4 billboard_constants[29] :  : c[37] : 6 : 1
+//var float4 billboard_constants[30] :  : c[38] : 6 : 1
+//var float4 billboard_constants[31] :  : c[39] : 6 : 1
+//var float4 billboard_constants[32] :  : c[40] : 6 : 1
+//var float4 billboard_constants[33] :  : c[41] : 6 : 1
+//var float4 billboard_constants[34] :  : c[42] : 6 : 1
+//var float4 billboard_constants[35] :  : c[43] : 6 : 1
+//var float4 billboard_constants[36] :  : c[44] : 6 : 1
+//var float4 billboard_constants[37] :  : c[45] : 6 : 1
+//var float4 billboard_constants[38] :  : c[46] : 6 : 1
+//var float4 billboard_constants[39] :  : c[47] : 6 : 1
+//var float4 billboard_constants[40] :  : c[48] : 6 : 1
+//var float4 billboard_constants[41] :  : c[49] : 6 : 1
+//var float4 billboard_constants[42] :  : c[50] : 6 : 1
+//var float4 billboard_constants[43] :  : c[51] : 6 : 1
+//var float4 billboard_constants[44] :  : c[52] : 6 : 1
+//var float4 billboard_constants[45] :  : c[53] : 6 : 1
+//var float4 billboard_constants[46] :  : c[54] : 6 : 1
+//var float4 billboard_constants[47] :  : c[55] : 6 : 1
+//var float4 billboard_constants[48] :  : c[56] : 6 : 1
+//var float4 billboard_constants[49] :  : c[57] : 6 : 1
+//var float4 billboard_constants[50] :  : c[58] : 6 : 1
+//var float4 billboard_constants[51] :  : c[59] : 6 : 1
+//var float4 billboard_constants[52] :  : c[60] : 6 : 1
+//var float4 billboard_constants[53] :  : c[61] : 6 : 1
+//var float4 billboard_constants[54] :  : c[62] : 6 : 1
+//var float4 billboard_constants[55] :  : c[63] : 6 : 1
+//var float4 billboard_constants[56] :  : c[64] : 6 : 1
+//var float4 billboard_constants[57] :  : c[65] : 6 : 1
+//var float4 billboard_constants[58] :  : c[66] : 6 : 1
+//var float4 billboard_constants[59] :  : c[67] : 6 : 1
+//var float4 billboard_constants[60] :  : c[68] : 6 : 1
+//var float4 billboard_constants[61] :  : c[69] : 6 : 1
+//var float4 billboard_constants[62] :  : c[70] : 6 : 1
+//var float4 billboard_constants[63] :  : c[71] : 6 : 1
+//var float4 vmain.m_vPosition : $vout.POSITION : HPOS : -1 : 1
+//var float2 vmain.m_vTexCoords : $vout.TEXCOORD0 : TEX0 : -1 : 1
+//var float1 vmain.m_vAlphaScalar : $vout.TEXCOORD1 : TEX1 : -1 : 1
+//var float3 vmain.m_vNormalMapVec : $vout.TEXCOORD2 : TEX2 : -1 : 1
+//var float4 vmain.m_vAmbient : $vout.COLOR1 : COL1 : -1 : 1
+//var float4 vmain.m_vDiffuse : $vout.TEXCOORD3 : TEX3 : -1 : 1
+//const c[72] = 0 0.15915491 0.5 3
+//const c[73] = 6.283185 -3.141593 1 0
+//const c[74] = -1.5500992e-006 -2.1701389e-005 0.0026041667 0.00026041668
+//const c[75] = -0.020833334 -0.125 1 0.5
+//const c[76] = 0.63661975 -1 0 6.2831855
+//const c[77] = 0.15915494 2 4 5
+//const c[78] = 6 0.44999999
+dcl_position0 v0
+dcl_normal0 v1
+dcl_texcoord0 v2
+dcl_texcoord1 v3
+def c72, 0.00000000, 0.15915491, 0.50000000, 3.00000000
+def c73, 6.28318501, -3.14159298, 1.00000000, 0.00000000
+def c74, -0.00000155, -0.00002170, 0.00260417, 0.00026042
+def c75, -0.02083333, -0.12500000, 1.00000000, 0.50000000
+def c76, 0.63661975, -1.00000000, 0.00000000, 6.28318548
+def c77, 0.15915494, 2.00000000, 4.00000000, 5.00000000
+def c78, 6.00000000, 0.44999999, 0, 0
+add r2.xyz, v0, -c4
+dp3 r1.y, r2, r2
+mov r2.x, c76
+mul r5.x, c5.y, r2
+mov r0.x, c5
+mad r0.x, r0, c72.y, c72.z
+frc r0.x, r0
+mad r1.x, r0, c73, c73.y
+sincos r0.xy, r1.x, c74.xyzw, c75.xyzw
+rsq r0.z, r1.y
+rcp r5.z, r0.z
+slt r0.z, r5, c7
+max r2.y, -r0.z, r0.z
+abs r0.w, v2.x
+frc r1.w, r0
+slt r0.z, v2.x, c72.x
+max r0.z, -r0, r0
+add r0.w, r0, -r1
+slt r0.z, c72.x, r0
+add r1.w, -r0.z, c73.z
+mul r1.w, r0, r1
+mad r3.w, r0.z, -r0, r1
+slt r1.w, c72.x, r2.y
+add r5.y, -r5.x, c73.z
+add r1.w, -r1, c73.z
+mov r1.yz, r0.xxyw
+mov r4.w, c72.x
+mov r1.x, -r0.y
+sge r0.z, -r5.x, c76.y
+sge r0.w, c72.x, r5.y
+mul r0.w, r0.z, r0
+slt r0.z, c72.w, r3.w
+mul r0.w, r0.z, r0
+max r0.w, -r0, r0
+slt r0.w, c72.x, r0
+mul r1.w, r1, v3.y
+add r0.w, -r0, c73.z
+mul r0.w, r0, r1
+mov r2.yz, v1
+mov r2.x, c72
+mul r3.xyz, r2, r0.w
+mad r1.w, -v3.x, c72.y, c72.z
+frc r2.x, r1.w
+mov r1.w, c72.x
+dp3 r1.x, r1.yxww, r3
+dp3 r1.y, r1.zyww, r3
+mov r1.z, r3
+mad r4.x, r2, c73, c73.y
+sincos r2.xy, r4.x, c74.xyzw, c75.xyzw
+mov r4.yz, r2.xxyw
+mov r4.x, -r2.y
+dp3 r3.y, v1, r4.zyww
+sge r1.w, c72.x, r0.z
+dp3 r3.x, v1, r4.yxww
+mov r3.z, v1
+mad r3.xyz, r0.w, r3, v0
+sge r0.w, r0.z, c72.x
+mul r2.w, r0, r1
+rcp r2.z, v1.x
+mul r0.w, r2.z, c76
+mul r4.z, r0.w, c72
+add r2.z, v3.x, c5.x
+add r4.w, r2.z, r4.z
+slt r2.z, r2, -r4
+mul r4.z, r4.w, c77.x
+max r2.z, -r2, r2
+slt r2.z, c72.x, r2
+abs r4.z, r4
+frc r4.z, r4
+mul r4.w, r4.z, c76
+max r1.w, -r2, r2
+add r5.w, -r2.z, c73.z
+mul r5.w, r4, r5
+slt r4.z, c72.x, r1.w
+mad r2.z, r2, -r4.w, r5.w
+add r4.w, -r4.z, c73.z
+slt r1.w, r2.z, c72.x
+mul r3.xyz, r3, r4.w
+add r1.xyz, v0, r1
+mad r1.xyz, r1, r4.z, r3
+mul r1.w, r1, r2
+max r3.x, -r1.w, r1.w
+mov r1.w, c73.z
+slt r3.x, c72, r3
+add r3.y, -r3.x, c73.z
+mul r3.y, r2.z, r3
+dp4 oPos.w, r1, c3
+dp4 oPos.z, r1, c2
+rcp r3.z, r0.w
+add r2.z, r2, c76.w
+mad r0.w, r3.x, r2.z, r3.y
+mul r0.w, r0, r3.z
+frc r3.x, r0.w
+add r3.z, r0.w, -r3.x
+slt r2.z, r0.w, c72.x
+frc r3.x, -r0.w
+add r0.w, -r0, -r3.x
+max r2.z, -r2, r2
+slt r2.z, c72.x, r2
+add r3.y, -r2.z, c73.z
+mul r3.y, r3, r3.z
+mad r0.w, r2.z, -r0, r3.y
+dp4 oPos.y, r1, c1
+dp4 oPos.x, r1, c0
+abs r1.y, r0.w
+slt r1.x, r0.w, c72
+max r0.w, -r1.x, r1.x
+frc r1.x, r1.y
+slt r0.w, c72.x, r0
+add r2.z, r1.y, -r1.x
+mova a0.x, v2.y
+mov r1, c[a0.x + 8]
+mov r3.x, c72
+add r3.y, -r0.w, c73.z
+slt r3.z, r1.w, r3.x
+mul r3.x, r2.z, r3.y
+max r3.y, -r3.z, r3.z
+mad r0.w, r0, -r2.z, r3.x
+slt r3.y, c72.x, r3
+abs r3.z, r1.w
+frc r5.w, r3.z
+add r3.z, r3, -r5.w
+add r6.x, -r3.y, c73.z
+mul r5.w, r3.z, r6.x
+mad r3.x, r3.y, -r3.z, r5.w
+abs r5.w, v2.y
+frc r6.x, r5.w
+slt r3.z, v2.y, c72.x
+max r3.z, -r3, r3
+slt r3.z, c72.x, r3
+add r5.w, r5, -r6.x
+add r6.y, -r3.z, c73.z
+mul r6.x, r5.w, r6.y
+mad r5.w, r3.z, -r5, r6.x
+mova a0.y, r5.w
+sge r3.y, c78.x, r3.w
+sge r2.z, r3.w, c78.x
+mul r2.z, r2, r3.y
+add r3.y, r5.w, r3.x
+add r0.w, r0, r3.y
+sge r3.x, r2.z, c72
+sge r3.z, c72.x, r2
+mul r3.z, r3.x, r3
+sge r6.x, c77.w, r3.w
+sge r3.x, r3.w, c77.w
+mul r3.x, r3, r6
+slt r6.y, c77.z, r3.w
+slt r6.x, r3.w, c77.z
+add r6.x, r6, r6.y
+mul r0.z, r0, r6.x
+mova a0.x, r0.w
+mul r0.w, r0.z, r3.x
+max r0.w, -r0, r0
+sge r6.z, c72.x, r3.x
+sge r6.y, r3.x, c72.x
+mul r6.y, r6, r6.z
+mul r6.y, r0.z, r6
+mul r3.z, r6.y, r3
+max r3.y, -r3.z, r3.z
+mul r0.z, r6.y, r2
+max r0.z, -r0, r0
+slt r2.z, c72.x, r0
+slt r0.w, c72.x, r0
+slt r6.x, c72, r3.y
+add r2.z, -r2, c73
+mad r0.zw, r0.w, c76.xyyz, -c76.y
+mul r0.zw, r2.z, r0
+add r2.z, -r6.x, c73
+mul r0.zw, r2.z, r0
+mad r0.zw, r6.x, c73, r0
+mov r2.z, c72.x
+mul r3.xyz, r4.w, r2
+mad r0.zw, -c[a0.y + 10], r0, c[a0.y + 10].xyxy
+mul r0.zw, r0, r4.w
+sge r6.x, c73.z, r3.w
+mov r2.x, -r0.y
+mov r2.y, r0.x
+mov r2.z, c72.x
+mad r2.xyz, r4.z, r2, r3
+dp3 oT2.x, r2, c6
+sge r3.y, c77, r3.w
+sge r3.x, r3.w, c77.y
+mul r3.x, r3, r3.y
+sge r3.z, c72.x, r3.x
+sge r3.y, r3.x, c72.x
+mul r3.y, r3, r3.z
+sge r3.z, r3.w, c72.x
+sge r5.w, c72.x, r3
+mul r5.w, r3.z, r5
+sge r3.z, r3.w, c73
+mul r3.z, r3, r6.x
+sge r6.x, c72, r5.w
+sge r3.w, r5, c72.x
+mul r3.w, r3, r6.x
+mul r3.w, r3, r2
+sge r6.x, c72, r3.z
+sge r5.w, r3.z, c72.x
+mul r5.w, r5, r6.x
+mul r5.w, r3, r5
+mul r2.w, r5, r3.y
+mul r3.y, r3.w, r3.z
+mul r3.x, r5.w, r3
+max r3.x, -r3, r3
+max r2.w, -r2, r2
+slt r3.z, c72.x, r3.x
+max r3.y, -r3, r3
+slt r3.x, c72, r3.y
+add r3.y, -r3.z, c73.z
+add r3.x, -r3, c73.z
+mul r3.x, r3, r3.y
+mul r3.xy, r3.x, c73.zwzw
+slt r2.w, c72.x, r2
+mad r3.xy, r3.z, c73.wzzw, r3
+add r3.z, -r2.w, c73
+mad r3.xy, r3.z, r3, r2.w
+mad r3.xy, -c[a0.x + 8].zwzw, r3, c[a0.x + 8]
+mad oT0.xy, r3, r4.z, r0.zwzw
+add r0.z, c7.w, -c7
+mul r0.w, -r0.z, c78.y
+mul r2.xy, r4.w, c73.wzzw
+mov r0.z, c72.x
+mad r0.xyz, r4.z, r0, r2.xxyw
+dp3 oT2.z, r0, c6
+add r0.w, r0, c7
+add r0.z, r0.w, -c7
+rcp r0.w, r0.z
+add r0.z, r5, -c7
+mul r0.w, r0.z, r0
+min r0.w, r0, c73.z
+max r0.w, r0, c72.x
+mov r0.xy, r4
+mov r0.z, c72.x
+mul r0.xyz, r4.w, r0
+mad r0.xyz, r4.z, c73.wwzw, r0
+dp3 oT2.y, r0, c6
+mul r2.x, r5.y, r0.w
+mul r0.y, r2.x, r4.w
+mul r0.x, r5, r0.w
+mad oT1.x, r0, r4.z, r0.y
+mov oD1, r1
+mov oT3, c[a0.y + 9]

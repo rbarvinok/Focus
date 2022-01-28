@@ -1,0 +1,25 @@
+#if defined(GL_ES)
+precision highp float;
+#endif
+
+attribute vec4 ig_Vertex;
+attribute vec4 ig_MultiTexCoord0;
+
+uniform float point_size;
+uniform mat4 ig_ModelViewProjectionMatrix;
+
+varying vec3 v_color;
+varying float v_magnitude;
+varying vec2 v_point_center;
+
+void main() {
+  v_color = ig_MultiTexCoord0.rgb;
+  v_magnitude = ig_MultiTexCoord0.a;
+
+  vec4 position = ig_ModelViewProjectionMatrix * ig_Vertex;
+  gl_Position = position;
+
+  // Store the projected center of the point to simulate gl_PointCoord.
+  v_point_center = position.xy / position.w;
+  gl_PointSize = point_size;
+}

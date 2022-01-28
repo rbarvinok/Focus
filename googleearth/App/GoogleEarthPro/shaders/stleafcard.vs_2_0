@@ -1,0 +1,122 @@
+vs_2_0
+// cgc version 2.2.0017, build date Jan 29 2010
+// command line args: -profile vs_2_0 -quiet
+//vendor NVIDIA Corporation
+//version 2.2.0.17
+//profile vs_2_0
+//program vmain
+//semantic vmain.batch_model_view_proj
+//semantic vmain.batch_camera_location
+//semantic vmain.batch_camera_direction
+//semantic vmain.batch_camera_params
+//semantic vmain.lightDirection
+//semantic vmain.treeRotationVector
+//semantic vmain.treePosAndScale
+//semantic vmain.lod_profile
+//semantic vmain.materialDiffuse
+//var float3 sIn.m_vPosition : $vin.POSITION0 : ATTR0 : 0 : 1
+//var float3 sIn.m_vNormal : $vin.NORMAL0 : ATTR1 : 0 : 1
+//var float4 sIn.m_vTexCoords : $vin.TEXCOORD0 : ATTR2 : 0 : 1
+//var float4 sIn.m_vCorner : $vin.TEXCOORD1 : ATTR3 : 0 : 1
+//var float4 sIn.m_vTangent : $vin.TEXCOORD2 : ATTR4 : 0 : 1
+//var float4 sIn.m_vBinormal : $vin.TEXCOORD3 : ATTR5 : 0 : 1
+//var float4x4 batch_model_view_proj :  : c[0], 4 : 1 : 1
+//var float3 batch_camera_location :  : c[4] : 2 : 1
+//var float3 batch_camera_direction :  : c[5] : 3 : 1
+//var float4 batch_camera_params :  : c[6] : 4 : 1
+//var float3 lightDirection :  : c[7] : 5 : 1
+//var float4 treeRotationVector :  : c[8] : 6 : 1
+//var float4 treePosAndScale :  : c[9] : 7 : 1
+//var float4 lod_profile :  : c[10] : 8 : 1
+//var float4 materialDiffuse :  : c[11] : 9 : 1
+//var float4 vmain.m_vPosition : $vout.POSITION : HPOS : -1 : 1
+//var float4 vmain.m_vDiffuseTexCoords : $vout.TEXCOORD0 : TEX0 : -1 : 1
+//var float4 vmain.m_vNormalVec : $vout.TEXCOORD1 : TEX1 : -1 : 1
+//const c[12] = 0 0.15915491 0.5 1
+//const c[13] = 6.283185 -3.141593 0.44999999
+//const c[14] = -1.5500992e-006 -2.1701389e-005 0.0026041667 0.00026041668
+//const c[15] = -0.020833334 -0.125 1 0.5
+def c12, 0.00000000, 0.15915491, 0.50000000, 1.00000000
+def c13, 6.28318501, -3.14159298, 0.44999999, 0
+def c14, -0.00000155, -0.00002170, 0.00260417, 0.00026042
+def c15, -0.02083333, -0.12500000, 1.00000000, 0.50000000
+dcl_position0 v0
+dcl_normal0 v1
+dcl_texcoord0 v2
+dcl_texcoord1 v3
+dcl_texcoord2 v4
+dcl_texcoord3 v5
+mov r0.x, c6.w
+mov r0.y, c6.z
+mad r0.x, r0, c12.y, c12.z
+mad r0.y, r0, c12, c12.z
+frc r0.y, r0
+frc r0.x, r0
+mad r0.x, r0, c13, c13.y
+sincos r3.xy, r0.x, c14.xyzw, c15.xyzw
+mad r1.x, r0.y, c13, c13.y
+sincos r0.xy, r1.x, c14.xyzw, c15.xyzw
+mov r1.xz, r3.xyyw
+mul r0.zw, -r0.y, c12.xyxw
+mov r1.y, c12.x
+mad r2.xyz, r0.x, r1, r0.zwzw
+mul r0.zw, r0.x, c12.xyxw
+mad r0.xyz, r0.y, r1, r0.zwzw
+add r1.xyz, r0, c12.x
+add r1.w, v2.z, -v2
+mad r0.w, r1, c8.z, v2
+mul r0.yz, v3.xxyw, r0.w
+mov r0.x, c12
+mov r0.w, c12.x
+add r2.xyz, r2, c12.x
+dp3 r1.y, r0, r1
+dp3 r1.x, r0, r2
+mov r1.w, c12
+mov r2.x, -r3.y
+mov r2.z, r3.x
+mov r2.y, c12.x
+dp3 r1.z, r2, r0
+mov r0.xy, c8
+mov r0.z, -c8.x
+dp3 r2.x, r0.yxww, v0
+dp3 r2.y, r0.zyww, v0
+mov r2.z, v0
+add r1.xyz, r2, r1
+mad r1.xyz, r1, c9.w, c9
+mul r2.x, v3.w, c9.w
+mad r1.xyz, r2.x, c5, r1
+dp4 oPos.w, r1, c3
+dp4 oPos.z, r1, c2
+dp4 oPos.y, r1, c1
+dp4 oPos.x, r1, c0
+add r1.w, c10, -c10.z
+dp3 r1.x, r0.yxww, v1
+dp3 r1.y, r0.zyww, v1
+mov r1.z, v1
+dp3 oT1.z, r1, c7
+dp3 r1.x, r0.yxww, v5
+dp3 r1.y, r0.zyww, v5
+dp3 r0.x, r0.yxww, v4
+dp3 r0.y, r0.zyww, v4
+mov r1.z, v5
+dp3 oT1.y, r1, c7
+mov r1.xyz, c9
+add r1.xyz, -c4, r1
+dp3 r1.x, r1, r1
+mul r1.w, r1, c13.z
+add r1.y, r1.w, c10.z
+rsq r1.x, r1.x
+add r1.z, -r1.y, c10.w
+rcp r1.x, r1.x
+mov r0.z, v4
+rcp r1.z, r1.z
+add r1.x, r1, -r1.y
+mul r1.x, r1, r1.z
+min r1.x, r1, c12.w
+max r0.w, r1.x, c12.x
+add r0.w, -r0, c12
+dp3 oT1.x, r0, c7
+mul oT0.w, r0, c11
+mov oT0.xy, v2
+mov oT0.z, c12.x
+mov oT1.w, c12

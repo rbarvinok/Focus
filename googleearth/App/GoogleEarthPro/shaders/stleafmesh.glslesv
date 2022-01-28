@@ -1,0 +1,173 @@
+// Copyright 2010 Google, Inc.  All rights reserved.
+// Author: chrisco@google.com (Chris Co)
+//
+// NOTE(chrisco) 2010-02-03: Since much of this shader code remains untouched
+// from the way it was provided by IDV, the IDV copyright is kept here.
+
+///////////////////////////////////////////////////////////////////////
+//  LeafMesh.fx
+//
+//  This file contains the shaders used for the leaf mesh geometry.  These shaders
+//  will compile with HLSL and Cg compilers.
+//
+//
+//  *** INTERACTIVE DATA VISUALIZATION (IDV) CONFIDENTIAL AND PROPRIETARY INFORMATION ***
+//
+//  This software is supplied under the terms of a license agreement or
+//  nondisclosure agreement with Interactive Data Visualization, Inc. and
+//  may not be copied, disclosed, or exploited except in accordance with
+//  the terms of that agreement.
+//
+//      Copyright (c) 2003-2009 IDV, Inc.
+//      All rights reserved in all media.
+//
+//      IDV, Inc.
+//      Web: http://www.idvinc.com
+
+//  Leaf mesh vertex input is currently the same as the branch
+
+// NOTE(chrisco) 2010-02-03: The branch and leaf mesh vertex shaders take the
+// exact same input.
+// TODO(chrisco): move SBranchVertex into a common header.
+
+$input "glsles.h"
+$input "speedtree_configuration_glsles.h"
+$input "speedtree_utils_glsles.h"
+
+attribute vec4 ig_Vertex;
+attribute vec4 ig_Normal;
+attribute vec4 ig_MultiTexCoord0;
+attribute vec4 ig_MultiTexCoord1;
+attribute vec4 ig_MultiTexCoord2;
+attribute vec4 ig_MultiTexCoord3;
+
+uniform vec3   batch_camera_location;
+uniform vec3   lightDirection;
+uniform vec4   treeRotationVector;
+uniform vec4   treePosAndScale;
+uniform vec4   lod_profile;
+uniform vec4   materialDiffuse;
+
+varying vec4  vout_position;
+varying vec4  vout_diffuseTexCoords; // xy = diffuse texcoords, z = unused, w = alpha scalar
+varying vec4  vout_normalVec;    // xyz = normal map vector
+#ifdef GOOGLE_COMPUTE_FOG
+varying vec4  vout_fogData;       // for sky color fogging
+#endif
+
+
+
+void main()
+{
+    vec3  position     = ig_Vertex.xyz;   // xyz = position,
+    vec3  normal       = ig_Normal.xyz;   // xyz = normal
+    vec4  tangent      = ig_MultiTexCoord0;  // xyz = tangent, w = unused
+    vec4  binormal     = ig_MultiTexCoord1;  // xyz = binormal,
+                                          // w = diffuse texcoord s
+    vec4  lodPosition  = ig_MultiTexCoord2;  // xyz = LOD position,
+                                          // w = diffuse texcoord t
+#if defined(SPEEDTREE_BASIC_WIND)
+    vec4  misc         = ig_MultiTexCoord3;  // x = ambient occlusion,
+                                          // y = wind scalar
+#else
+    // Unused texture coordinate used only to prevent crashes (b/23181446).
+    vec4  unused1      = ig_MultiTexCoord3;
+#endif
+#ifdef SPEEDTREE_BASIC_WIND
+    vec4  windData     = ig_MultiTexCoord4;  // xyz = wind direction,
+                                          // w = wind offset
+#endif
+
+    // Unpack and convert the input into variables used by the original
+    // SpeedTree shader.
+    mat4 g_mModelViewProj = ig_ModelViewProjectionMatrix;
+    vec3 g_vCameraPosition = batch_camera_location;
+    vec3 g_vLightDir = lightDirection;
+    vec4 g_vLodProfile = lod_profile;
+
+    vec4 g_vTreePosAndScale = treePosAndScale;  // xyz = position, w = scale
+    vec4 g_vTreeRotation = treeRotationVector;  // x = -sin A, y = cos A, z = lod value (1 = highest, 0 = lowest)
+
+    float c_fAlphaScalar = materialDiffuse.a;
+
+    // setup aliases (taken from global variables)
+    float  c_fTreeScale = g_vTreePosAndScale.w;
+    vec3 c_vTreePos = g_vTreePosAndScale.xyz;
+    float  c_fLod = g_vTreeRotation.w;
+    float  c_fLodLerp = g_vTreeRotation.z;
+
+    // setup aliases (taken from incoming vertex)
+    vec3 c_vLodPos = lodPosition.xyz;
+    vec2 c_vDiffuseTexCoords = vec2(binormal.w, lodPosition.w);
+    vec3 c_vTangent = tangent.xyz;
+    vec3 c_vNormal = normal.xyz;
+    vec3 c_vBinormal = binormal.xyz;
+
+    // LOD interpolation; branches are shrunk & grown, depending on the LOD setting
+    vec3 vPosition = lerp(c_vLodPos, position.xyz, c_fLodLerp);
+
+    // compensate for the instance's arbitrary rotation
+    vPosition = AdjustForTreeRotation(vPosition.xyz, g_vTreeRotation);
+    vec3 vRotatedNormal = AdjustForTreeRotation(c_vNormal, g_vTreeRotation);
+    vec3 vRotatedTangent = AdjustForTreeRotation(c_vTangent, g_vTreeRotation);
+    vec3 vRotatedBinormal = AdjustForTreeRotation(c_vBinormal, g_vTreeRotation);
+
+    // move the branch vertex with wind
+#ifdef SPEEDTREE_BASIC_WIND
+    vec4 c_vWindData = windData;
+    float  c_fWindScalar = misc.y;
+    vPosition = LeafWindMotion(vPosition, vRotatedNormal, c_fWindScalar);
+    vec3 vWindOffset;
+    vPosition = CommonWindMotion(vPosition, c_vWindData, vWindOffset);
+
+    #ifdef SPEEDTREE_WIND_AFFECTS_LIGHTING
+        vRotatedNormal += vWindOffset;
+        vRotatedNormal = normalize(vRotatedNormal);
+        vRotatedBinormal += vWindOffset;
+        vRotatedBinormal = normalize(vRotatedBinormal);
+        vRotatedTangent += vWindOffset;
+        vRotatedTangent = normalize(vRotatedTangent);
+    #endif
+#endif
+
+    // normal map based lighting
+    vout_normalVec.x = dot(g_vLightDir, vRotatedTangent);
+    vout_normalVec.y = dot(g_vLightDir, vRotatedBinormal);
+    vout_normalVec.z = dot(g_vLightDir, vRotatedNormal);
+
+    // scale the whole tree
+    vPosition.xyz *= c_fTreeScale;
+
+    // move the instance into place
+    vPosition += c_vTreePos;
+
+    // final screen projection
+    gl_Position = ProjectToScreen(vPosition,
+                                       g_vCameraPosition, g_mModelViewProj);
+
+    // passthrough values
+    vout_diffuseTexCoords.xy = c_vDiffuseTexCoords;
+
+    // compute alpha scalar based on LOD; will cross fade the 3D geometry with billboard images
+    float fDistance;
+    vout_diffuseTexCoords.w = Compute3dFade(fDistance,
+                                               c_fAlphaScalar, g_vCameraPosition,
+                                               g_vTreePosAndScale, g_vLodProfile);
+    vout_normalVec.w = SpecialEffectFade(fDistance, g_vLodProfile);
+
+    // shadow projection
+#ifdef SPEEDTREE_SHADOWS_ENABLED
+    for (int i = 0; i < SPEEDTREE_NUM_SHADOW_MAPS; ++i)
+        sOut.m_av2dPosInLightSpace[i] = ProjectToLightSpace(vPosition, g_amLightViewProjs[i]);
+
+    // need the depth to determine which shadow map to use
+    vout_detailTexCoords.z = gl_Position.z / g_fFarClip;
+#endif
+
+    vout_diffuseTexCoords.z = 0.0;
+
+#ifdef GOOGLE_COMPUTE_FOG
+    // compute fog value
+    vout_fogData = FogVertex(vPosition);
+#endif
+}

@@ -1,0 +1,40 @@
+!!ARBfp1.0
+# cgc version 2.2.0017, build date Jan 29 2010
+# command line args: -profile arbfp1 -quiet
+#vendor NVIDIA Corporation
+#version 2.2.0.17
+#profile arbfp1
+#program pmain
+#semantic pmain.diffuseMap
+#semantic pmain.normalMap
+#var float2 sIn.m_vTexCoords : $vin.TEXCOORD0 : TEX0 : 0 : 1
+#var float1 sIn.m_vAlphaScalar : $vin.TEXCOORD1 : TEX1 : 0 : 1
+#var float3 sIn.m_vNormalMapVec : $vin.TEXCOORD2 : TEX2 : 0 : 1
+#var float4 sIn.m_vAmbient : $vin.COLOR1 : COL1 : 0 : 1
+#var float4 sIn.m_vDiffuse : $vin.TEXCOORD3 : TEX3 : 0 : 1
+#var sampler2D diffuseMap :  : texunit 0 : 1 : 1
+#var sampler2D normalMap :  : texunit 1 : 2 : 1
+#var float4 pmain : $vout.COLOR : COL : -1 : 1
+#var <none>4 $kill_0000 : $vout.$kill : $kill : -1 : 0
+#const c[0] = 2 1 0.1
+PARAM c[1] = { { 2, 1, 0.1 } };
+TEMP R0;
+TEMP R1;
+TEMP R2;
+TEX R0, fragment.texcoord[0], texture[1], 2D;
+DP3 R1.x, fragment.texcoord[2], fragment.texcoord[2];
+RSQ R1.w, R1.x;
+MUL R1.xyz, R0.w, fragment.color.secondary;
+MUL R2.xyz, R1.w, fragment.texcoord[2];
+MAD R0.xyz, R0, c[0].x, -c[0].y;
+DP3_SAT R1.w, R0, R2;
+TEX R0, fragment.texcoord[0], texture[0], 2D;
+MUL R0.w, R0, fragment.texcoord[1].x;
+MAD R2.xyz, fragment.texcoord[3], fragment.texcoord[3].w, -R1;
+MAD R1.xyz, R1.w, R2, R1;
+MUL result.color.xyz, R1, R0;
+SLT R0.x, R0.w, c[0].z;
+MOV result.color.w, R0;
+KIL -R0.x;
+END
+# 15 instructions, 3 R-regs

@@ -1,0 +1,393 @@
+// Copyright 2010 Google, Inc.  All rights reserved.
+// Author: chrisco@google.com (Chris Co)
+//
+// NOTE(chrisco) 2010-01-27: Since much of this shader code remains untouched
+// from the way it was provided by IDV, the IDV copyright is kept here.
+
+///////////////////////////////////////////////////////////////////////
+//  Billboard.fx
+//
+//  *** INTERACTIVE DATA VISUALIZATION (IDV) CONFIDENTIAL AND PROPRIETARY INFORMATION ***
+//
+//  This software is supplied under the terms of a license agreement or
+//  nondisclosure agreement with Interactive Data Visualization, Inc. and
+//  may not be copied, disclosed, or exploited except in accordance with
+//  the terms of that agreement.
+//
+//      Copyright (c) 2003-2009 IDV, Inc.
+//      All rights reserved in all media.
+//
+//      IDV, Inc.
+//      Web: http://www.idvinc.com
+
+$input "glsles.h"
+$input "speedtree_configuration_glsles.h"
+$input "speedtree_utils_glsles.h"
+
+attribute vec4 ig_Vertex;
+attribute vec4 ig_Normal;
+attribute vec4 ig_MultiTexCoord0;
+attribute vec4 ig_MultiTexCoord1;
+
+
+///////////////////////////////////////////////////////////////////////
+//  Billboard-specific global variables
+
+// MAXIMUM_NUM_CONSTANTS MUST NEVER be less than the number of billboard shader
+// constants being passed in.  This variable should be replaced by a dynamically
+// changing array size, but I couldn't get it to work through the ASD file.
+// NOTE(dfalcantara): OpenGL dies if 64 is used, as this is supposed to be the
+//                    number of blend matrices to upload, which should be about
+//                    16.  The DirectX version makes some assumptions which
+//                    prevent the crash.
+#define MAXIMUM_NUM_CONSTANTS 64
+
+// NOTE(chrisco) 2010-01-26: Code kept here for documentation purposes.
+#if 0
+// SPEEDTREE_MAX_BILLBOARD_IMAGES should be defined during shader compilation by the
+// app or by an offline utility; if not set it should default to something
+#ifndef SPEEDTREE_MAX_BILLBOARD_IMAGES
+    #define SPEEDTREE_MAX_BILLBOARD_IMAGES 50
+#endif
+
+float       g_fNum360Images;
+vec4      g_vCameraAzimuthTrig;                               // stores (sin, cos, -sin, 0.0) for the camera azimuth angle for optimized rotation in billboard vs
+vec4      g_av360TexCoords[SPEEDTREE_MAX_BILLBOARD_IMAGES];
+vec4      g_vHorzBillboardTexCoords;
+vec4      g_avBillboardTangents[3];                           // w components are ignored
+#endif
+
+
+///////////////////////////////////////////////////////////////////////
+//  Billboard-specific constants
+// NOTE(chrisco): 2010-01-25: global constants do not work.
+#if 0
+vec2 g_avVertTexCoordScales[4] =                // used to compress & optimize the g_v360TexCoord lookups (x = s scale, y = t scale)
+{
+    vec2(1.0, 0.0),
+    vec2(0.0, 0.0),
+    vec2(0.0, 1.0),
+    vec2(1.0, 1.0)
+};
+
+vec2 g_avHorzTexCoordScales[4] =                // used to compress & optimize the g_v360TexCoord lookups (x = s scale, y = t scale)
+{
+    vec2(1.0, 1.0),
+    vec2(0.0, 1.0),
+    vec2(0.0, 0.0),
+    vec2(1.0, 0.0)
+};
+#endif
+
+///////////////////////////////////////////////////////////////////////
+//  Shader input/output structures
+//
+//  The cpp-level source code is setup to feed this vertex format to all of the
+//  vertical BB vertex shader variations.
+
+#ifdef GOOGLE_COMPUTE_FOG
+varying vec4  vout_fogData; // used to help with fog & sky effect
+#endif
+varying vec2  vout_texCoords;  // xy = texcoords_image_0
+varying float  vout_alphaScalar;  // x = alpha scalar
+varying vec3  vout_normalMapVec;  // xyz = normal map adjust
+                                    // Per-species light contributions.
+varying vec4  vout_ambient;       // rgb = material_ambient
+varying vec4  vout_diffuse;  // rgb = material_diffuse,
+
+///////////////////////////////////////////////////////////////////////
+//  Helper function: RotateCorner
+//
+//  NOTE(chrisco): 2010-01-26: Rotates around the z-axis by the azimuth angle.
+//  Rotates clockwise or counterclockwise depending on how g_vCameraAzimuthTrig
+//  is setup.
+
+vec3 RotateCorner(vec3 vCorner, vec4 g_vCameraAzimuthTrig)
+{
+#ifdef SPEEDTREE_Z_UP
+    return vec3(dot(g_vCameraAzimuthTrig.yxw, vCorner.xyz), dot(g_vCameraAzimuthTrig.zyw, vCorner.xyz), vCorner.z);
+#else
+    return vec3(dot(g_vCameraAzimuthTrig.ywz, vCorner.xyz), vCorner.y, dot(g_vCameraAzimuthTrig.xwy, vCorner.xyz));
+#endif
+}
+
+
+///////////////////////////////////////////////////////////////////////
+//  Helper function: DetermineBillboardTexCoords
+//
+//  The SpeedTree Compiler application uses the following convention when generating
+//  the 360-degree billboard images.
+//
+//  The N billboard images are taken from angles (0/N)*360, (1/N)*360, and ((N-1)/N)*360.
+//  0 degrees is when the camera is at a normalized position of (1,0,0), looking to the
+//  origin.  90 degrees is when the camera is at a normalized position of (0,1,0), looking
+//  to the origin and so forth.
+//
+//  One 360-degree image is meant to cover a 360/N-degree sweep.  For example, if 6 images
+//  are used, image 0 will cover -30 to 30 degrees, image 1 covers 30 to 90, etc.
+
+// billboard_constants contains the texture coordinates for the vertical
+// billboard textures.  nArrayOffset is the index to the first set of texture
+// coordinates for this tree.
+vec2 DetermineBillboardTexCoords(float fRotation, int nCornerIndex,
+                                   vec2 g_vCameraAngles,
+                                   float g_fNum360Images,
+                                   vec4 billboard_constants[MAXIMUM_NUM_CONSTANTS],
+                                   int nArrayOffset
+                                   ) // rotation is in radians
+{
+    // values derived from global shader constants
+    float  c_fCameraAzimuth = g_vCameraAngles.x;
+    float  c_nNum360Images = g_fNum360Images;
+    float  c_fAngleSweepPerImage = c_fTwoPi / float(c_nNum360Images);
+    float  c_fHalfSweep = 0.5 * c_fAngleSweepPerImage;
+
+    // get the tree angle into [0, 2pi] range
+    float fTreeAngle = c_fCameraAzimuth + fRotation + c_fHalfSweep;
+
+    #if (defined(SPEEDTREE_RHCS) && defined(SPEEDTREE_Y_UP))
+        fTreeAngle += c_fPi;
+    #endif
+    #if (defined(SPEEDTREE_LHCS) && defined(SPEEDTREE_Z_UP))
+        fTreeAngle = c_fPi - fTreeAngle + c_fHalfSweep;
+    #endif
+    #if (defined(SPEEDTREE_LHCS) && defined(SPEEDTREE_Y_UP))
+        fTreeAngle = c_fTwoPi - fTreeAngle + 2.0 * c_fHalfSweep;
+    #endif
+
+    fTreeAngle = mod(fTreeAngle, c_fTwoPi);
+    if (fTreeAngle < 0.0)
+        fTreeAngle += c_fTwoPi;
+
+    // convert from tree angle to texcoord index
+    int nImageIndex = int(trunc(fTreeAngle / c_fAngleSweepPerImage));
+
+    // this shouldn't be necessary if mod() worked correctly, but roundoff
+    // may possibly cause a problem
+    //if (nImageIndex > c_nNum360Images - 1)
+    //  nImageIndex = 0;
+
+    // compute texcoords
+    nImageIndex += nArrayOffset;
+    vec4 vTexCoords = billboard_constants[nImageIndex];
+
+    // TODO(chrisco): store this in a texcoord to shrink the shader.
+    // NOTE(chrisco) 2010-01-25: These constants used to be stored in a global
+    // array.  The corners are indexed as: 0 1.
+    //                                     3 2
+    // For the billboards to render right side up, this layout must be
+    // coordinated with the order in which the corner vertices are specified in
+    // the vertex array.
+    vec2 vCoordScale;
+    if (nCornerIndex == 0) {
+        vCoordScale = vec2(1.0, 0.0);
+    } else if (nCornerIndex == 1) {
+        vCoordScale = vec2(0.0, 0.0);
+    } else if (nCornerIndex == 2) {
+        vCoordScale = vec2(0.0, 1.0);
+    } else {
+        vCoordScale = vec2(1.0, 1.0);
+    }
+
+    return vTexCoords.xy - (vTexCoords.zw * vCoordScale.xy);
+}
+
+
+///////////////////////////////////////////////////////////////////////
+//  BillboardVertex
+
+uniform vec3 batch_camera_location;
+uniform vec4 batch_camera_params; // x = Camera azimuth
+                                    // y = Camera zenith
+                                    // zw = unused
+uniform vec3 lightDirection;
+uniform vec4 lod_profile;
+uniform vec4 billboard_constants[MAXIMUM_NUM_CONSTANTS];
+
+void main()
+{
+    vec3  position         = ig_Vertex.xyz; // xyz = center pos
+    vec3  cornerPos        = ig_Normal.xyz; // xyz = corner's position
+    // x = card corner index [0-3],
+    // y = array start index,
+    // zw = unused
+    vec4  cornerAndStart   = ig_MultiTexCoord0;
+    // x = scale, y = rotation
+    // zw = unused
+    vec4  geomTransform    = ig_MultiTexCoord1;
+
+    int c_nArrayStart = int(cornerAndStart.y);
+    // Unpack and convert the input into variables used by the original
+    // SpeedTree billboard shader.
+    mat4 g_mModelViewProj = ig_ModelViewProjectionMatrix;
+    vec3 g_vCameraPosition = batch_camera_location;
+    vec3 g_vLightDir = lightDirection;
+    vec4 g_vCameraAzimuthTrig;
+
+    // Set up g_vCameraAzimuthTrig to perform a counterclockwise rotation.
+    float sin_val, cos_val;
+    sincos(batch_camera_params.x, sin_val, cos_val);
+    g_vCameraAzimuthTrig.x = -sin_val;
+    g_vCameraAzimuthTrig.y = cos_val;
+    g_vCameraAzimuthTrig.z = sin_val;
+    g_vCameraAzimuthTrig.w = 0.0;
+
+    vec2 g_vCameraAngles;
+    g_vCameraAngles.x = batch_camera_params.x;
+    g_vCameraAngles.y = batch_camera_params.y;
+
+    vec4 g_vLodProfile = lod_profile;
+
+    // NOTE(chrisco): The x-coordinate of the vertical BB corner vertex stores
+    // the number of vertical billboards the model contains.  This value is not
+    // passed for horizontal billboards, and ignored in the horizontal
+    // billboard code path.
+    float g_fNum360Images = cornerPos.x;
+
+    // NOTE(chrisco): These horizontal billboard constants might not be used if
+    // we are shading a vertical billboard vertex or if no horizontal billboard
+    // exists for the tree.
+    vec4 g_vHorzBillboardTexCoords = billboard_constants[c_nArrayStart + 2];
+
+    // Derive the horizontal fade factor from the camera zenith.
+    // 0.0 = Horizontal invisible, Vertical visible   (zenith = pi/2)
+    // 1.0 = Horizontal visible,   Vertical invisible (zenith = 0)
+    float g_fHorzBillboardFade = 1.0 - (g_vCameraAngles.y / (0.5 * c_fPi));
+
+    // These are for a vertical billboard with a right-handed Z-up coordinate
+    // system.
+    vec3 g_avBillboardTangents[3];
+    g_avBillboardTangents[0] = vec3(cos_val, sin_val, 0.0);  // normal
+    g_avBillboardTangents[1] = vec3(0.0, 0.0, 1.0);  // binormal
+    g_avBillboardTangents[2] = vec3(-sin_val, cos_val, 0.0);  // tangent
+
+    // setup aliases (taken from global variables)
+    float  c_fLodNear = g_vLodProfile.z;
+    float  c_fLodRange = g_vLodProfile.w - g_vLodProfile.z;
+    float  c_nNum360Images = g_fNum360Images;
+    vec4 c_vHorzTexCoords = g_vHorzBillboardTexCoords;
+
+    // setup shared bb aliases (taken from incoming vertex); vertical and horizontal
+    // shader paths may used these a little differently
+    int c_nTexCoordStartIndex = int(billboard_constants[c_nArrayStart].w);
+    vec3 c_vPosition = position.xyz;
+    int    c_nCornerIndex = int(cornerAndStart.x);
+    float  c_fScale = geomTransform.y;
+    float  c_fRotation = geomTransform.x;
+    bool   c_bHorizontal = (c_nCornerIndex > 3);
+
+    // compute LOD value
+    float fDistance = distance(g_vCameraPosition, c_vPosition);
+    float fVisibilityScale = fDistance < c_fLodNear ? 0.0 : c_fScale;
+
+    // compute fade value (for transition to/from 3d geometry)
+    vout_alphaScalar = ComputeBillboardFade(fDistance, g_vLodProfile);
+
+    // pass lighting data to the pixel shader
+    vout_ambient = billboard_constants[c_nArrayStart];
+    vout_diffuse = billboard_constants[c_nArrayStart + 1];
+
+    vec3 vNormal, vBinormal, vTangent, vPosition, vCorner;
+#ifdef SPEEDTREE_HORZ_BBS_ACTIVE
+    if (c_bHorizontal)
+    {
+        // setup tangents for horizontal bb
+        vNormal = ConvertFromStd(vec3(0.0, 0.0, 1.0));
+        vTangent = ConvertFromStd(vec3(1.0, 0.0, 0.0));
+        vBinormal = ConvertFromStd(vec3(0.0, 1.0, 0.0));
+
+        // rotate the tangents into place (no need to multiply normal since it points up)
+        // TODO(chrisco): verify that this rotation implementation is correct.
+        sincos(-c_fRotation, sin_val, cos_val);
+        vec4 vRotation = vec4(-sin_val, cos_val, sin_val, 0.0);
+        vTangent = RotateCorner(vTangent, vRotation);
+        vBinormal = RotateCorner(vBinormal, vRotation);
+
+        // rotate the corner into place
+        vCorner = cornerPos;
+        vCorner = RotateCorner(vCorner, vRotation);
+
+        if (g_fHorzBillboardFade == 0.0)
+            fVisibilityScale = 0.0;
+
+        vPosition = c_vPosition + vCorner * fVisibilityScale;
+
+        // TODO(chrisco): store this in a texcoord to shrink the shader.
+        // NOTE(chrisco) 2010-01-26: These constants used to be stored in a
+        // global array.  The corners are indexed as:
+        //   y
+        //   | 7 6      (Right-handed z-up).
+        //   | 4 5
+        //   z --- x
+        //
+        // For the billboards to render with the correct orientation, this
+        // layout must be coordinated with the order in which the corner
+        // vertices are specified in the vertex array.
+        vec2 vCoordScale;
+        if (c_nCornerIndex == 4) {
+            vCoordScale = vec2(1.0, 1.0);
+        } else if (c_nCornerIndex == 5) {
+            vCoordScale = vec2(0.0, 1.0);
+        } else if (c_nCornerIndex == 6) {
+            vCoordScale = vec2(0.0, 0.0);
+        } else {
+            vCoordScale = vec2(1.0, 0.0);
+        }
+
+        // texcoords in place (last entry in the texture table holds horz coords)
+        vout_texCoords.xy =  c_vHorzTexCoords.xy - (c_vHorzTexCoords.zw * vCoordScale.xy);
+
+        // compute fade value (for transition to/from 3d geometry)
+        vout_alphaScalar *= g_fHorzBillboardFade;
+    }
+    else
+    {
+#endif // SPEEDTREE_HORZ_BBS_ACTIVE
+        // scale corner (from 0.0 [invisible] while in 3D mode to visible in billboard)
+        // make sure the x-coordinate of the vertical BB corner vertex is zero.
+        // NOTE(chrisco): The x-coordinate of the vertical BB corner vertex
+        // stores the number of vertical billboards the model contains.
+        cornerPos.x = 0.0;
+        vCorner = cornerPos * fVisibilityScale;
+
+        // rotate corner
+        vCorner = RotateCorner(vCorner, g_vCameraAzimuthTrig);
+
+        // pick the right billboard out of the atlas, based on this instance's rotation value
+        vout_texCoords.xy = DetermineBillboardTexCoords(c_fRotation, c_nCornerIndex,
+                                                           g_vCameraAngles, g_fNum360Images,
+                                                           billboard_constants,
+                                                           c_nArrayStart + c_nTexCoordStartIndex);
+
+#ifdef SPEEDTREE_BASIC_WIND
+        vCorner = BillboardMotion(vCorner / c_fScale, c_vPosition.xy) * c_fScale;
+#endif
+
+        // compute final world-space position
+        vPosition = c_vPosition + vCorner;
+
+        // setup tangents
+        vNormal = g_avBillboardTangents[0].xyz;
+        vBinormal = g_avBillboardTangents[1].xyz;
+        vTangent = g_avBillboardTangents[2].xyz;
+
+        // compute fade value (for transition to/from 3d geometry)
+        vout_alphaScalar *= (1.0 - g_fHorzBillboardFade);
+#ifdef SPEEDTREE_HORZ_BBS_ACTIVE
+    }
+#endif
+
+    // compute normal mapping vector
+    vout_normalMapVec.x = dot(g_vLightDir, vTangent);
+    vout_normalMapVec.y = dot(g_vLightDir, vBinormal);
+    vout_normalMapVec.z = dot(g_vLightDir, vNormal);
+
+    // final screen projection
+    gl_Position = ProjectToScreen(vPosition.xyz,
+                                       g_vCameraPosition, g_mModelViewProj);
+
+#ifdef GOOGLE_COMPUTE_FOG
+    // compute fog value
+    vout_fogData = FogVertex(vPosition.xyz);
+#endif
+}

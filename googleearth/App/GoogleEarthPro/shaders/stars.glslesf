@@ -1,0 +1,52 @@
+#if defined(GL_ES)
+precision highp float;
+#endif
+
+// viewport.x - inverse viewport width
+// viewport.y - inverse viewport height
+// viewport.z - viewport width / point_size
+// viewport.w - viewport height / point_size
+uniform vec4 viewport;
+
+// Stars sprite.
+uniform sampler2D t_tex0;
+
+varying vec3 v_color;
+varying float v_magnitude;
+varying vec2 v_point_center;
+
+// Returns a low dynamic range pixel color corresponding to the given high
+// dynamic range radiance.
+vec3 toneMapping(vec3 L, float exposure) {
+  L = L * exposure;
+  L = vec3(1.0) - exp(-L);
+  return L;
+}
+
+void main() {
+  // Ideally, we would do the following:
+  // vec2 center_diff = 2.*(gl_PointCoord - vec2(0.5, 0.5));
+  // but some older clients only support GLSL 110, which doesn't have
+  // gl_PointCoord.  We can calculate center_diff using gl_FragCoord and
+  // the projected center of the point (v_point_center), so long as we know the
+  // dimensions of the viewport (which we have as a uniform).
+
+  // The current position on the window in 0..1.
+  vec2 local_position = gl_FragCoord.xy * viewport.xy;
+  // The center of the point in window coordinates from 0..1.
+  vec2 point_center = 0.5 * v_point_center + vec2(0.5);
+  // The difference between the points, converted to 0..1 over the point radius.
+  vec2 center_diff = (local_position - point_center) * viewport.zw;
+  float dist_from_center_sq = min(1., dot(center_diff, center_diff));
+
+  // Read the intensity of this pixel from the sprite texture.
+  vec2 lookup = vec2(0.5 * sqrt(dist_from_center_sq), .5);
+  float intensity = texture2D(t_tex0, lookup).r;
+  vec3 color = (v_magnitude * intensity) * v_color;
+
+  // Tone map the output.
+  // TODO(cdonner): make exposure a uniform that is computed automatically.
+  float exposure = 40.0;
+  color = toneMapping(color, exposure);
+  gl_FragColor = vec4(color, intensity);
+}

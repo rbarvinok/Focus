@@ -1,0 +1,712 @@
+$input "glsles.h"
+#ifdef USE_IMPROVED_SHADER_VARIATION
+$input "atmosphere.glsllib"
+#else
+const float kPi = 3.141592657;
+#endif
+#if defined(VIEWSHED_DEPTH_WRITE) || defined(VIEWSHED_RENDER)
+$input "viewshed.h"
+#endif
+
+// Constant g for phase function used for Mie scattering.
+const float gMieConst = -0.990;
+const float gMieConst2 = gMieConst * gMieConst;
+
+varying vec4 vout_texCoordAndFogFactor;
+#if defined(QUADRANT_ALPHAS)
+varying float vout_alpha;
+#endif
+
+uniform lowp sampler2D groundTexture;
+#ifdef MAPSTAR
+uniform lowp sampler2D styleIdTexture;
+uniform lowp sampler2D styleTexture;
+#endif
+uniform lowp vec4 groundColor;
+
+#if defined(OVERLAY)
+uniform vec4 groundOverlayExtent;
+float GetMaskedOverlayAlpha(float alpha, vec2 texCoord) {
+  return ((texCoord.s - groundOverlayExtent.x) *
+          (groundOverlayExtent.y - texCoord.s) >= 0. &&
+          (texCoord.t - groundOverlayExtent.z) *
+          (groundOverlayExtent.w - texCoord.t) >= 0. ? alpha : 0.0);
+}
+
+#endif // defined(OVERLAY)
+
+#if defined(USE_IMPROVED_SHADER_VARIATION)
+// x: atmosphere density.
+// y: atmosphere angle falloff.
+// z: night intensity.
+// w: camera exposure.
+uniform vec4 atmosphereTweaks;
+uniform float has_color;
+#endif // defined(USE_IMPROVED_SHADER_VARIATION)
+
+uniform float has_texture;
+#if defined(MODEL) || defined(USE_IMPROVED_SHADER_VARIATION)
+uniform float has_lighting;
+varying lowp vec4 v_global_color;
+#endif  // defined(MODEL)
+
+
+//============================== ground sun off
+#if defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_OFF)
+
+#if !defined(USE_SIMPLIFIED_SHADER_VARIATION)
+varying vec4 vout_blendTexCoordAndRayleighT;
+#endif
+
+uniform lowp sampler2D groundRayleighMap;
+uniform vec4 groundSunOffPixelParams;
+uniform lowp vec4 groundFogColor;
+
+void AtmosphereGroundSunOffFragShader() {
+  // Get the texture color for the object.
+#if defined(MODEL)
+  lowp vec4 texColor = mix(
+      v_global_color,
+      texture2D(groundTexture, vout_texCoordAndFogFactor.st) * v_global_color,
+      has_texture);
+#else
+  lowp vec4 texColor = texture2D(groundTexture, vout_texCoordAndFogFactor.st);
+#endif  // defined(MODEL)
+
+  texColor *= groundColor;
+
+  lowp vec4 color;
+#if defined(USE_SIMPLIFIED_SHADER_VARIATION)
+  color = texColor;
+#else
+  // The rayleigh map's s-coordinate depends on camera height and is computed
+  // on the CPU.
+  float rayleighS = groundSunOffPixelParams.x;
+  lowp vec4 rayleigh = texture2D(groundRayleighMap,
+                          vec2(rayleighS, vout_blendTexCoordAndRayleighT.z));
+  texColor.rgb += rayleigh.rgb;
+  lowp float fogFactor = vout_texCoordAndFogFactor.w;
+  color.rgb = mix(groundFogColor.rgb, texColor.rgb, fogFactor);
+  color.a = texColor.a;
+#endif
+  gl_FragColor = computeDebugPixelColor(color);
+}
+
+//============================== ground sun off overlay
+#if defined(OVERLAY)
+uniform lowp sampler2D groundRayleighOverlayMap;
+
+void AtmosphereGroundSunOffOverlayFragShader() {
+  // Get the texture color for the object. The projective component is to
+  // allow us to do Arbitrary Ground Overlays.
+  lowp vec4 texColor = mix(
+      groundColor,
+      texture2DProj(groundTexture, vout_texCoordAndFogFactor.stp) * groundColor,
+      has_texture);
+  // Note that we do not allow texture blend for overlays.
+  // Perform texture edge clamping for ground overlays by setting alpha to zero
+  // outside of texture coordinate range [0, 1]
+  vec2 stOverZ = vout_texCoordAndFogFactor.xy / vout_texCoordAndFogFactor.z;
+  texColor.a = GetMaskedOverlayAlpha(texColor.a, stOverZ);
+
+  // The rayleigh map's s-coordinate depends on camera height and is computed
+  // on the CPU.
+  float rayleighS = groundSunOffPixelParams.x;
+  lowp vec4 rayleigh = texture2D(
+      groundRayleighOverlayMap,
+      vec2(rayleighS, vout_blendTexCoordAndRayleighT.z));
+  texColor.rgb += rayleigh.rgb;
+  lowp float fogFactor = vout_texCoordAndFogFactor.w;
+  lowp vec4 color;
+  color.rgb = mix(groundFogColor.rgb, texColor.rgb, fogFactor);
+  color.a = texColor.a;
+  gl_FragColor = computeDebugPixelColor(color);
+}
+#endif // defined(OVERLAY)
+#endif // defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_OFF)
+
+//============================== ground sun on (default)
+#if defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_ON) && !defined(USE_IMPROVED_SHADER_VARIATION)
+varying vec3 vout_rayleigh;
+varying vec3 vout_adjustedMie;
+uniform vec4 fogColor;
+
+void AtmosphereGroundSunOnFragShader() {
+  // If texturing is off, use white as diffuse color. Otherwise use color
+  // from texture.
+#if defined(MODEL)
+  lowp vec4 texColor = mix(
+      v_global_color,
+      texture2D(groundTexture, vout_texCoordAndFogFactor.st) * v_global_color,
+      has_texture);
+#else
+  lowp vec4 texColor = mix(
+      groundColor,
+      texture2D(groundTexture, vout_texCoordAndFogFactor.st) * groundColor,
+      has_texture);
+#endif  // defined(MODEL)
+  vec3 scatteredColor = vout_rayleigh.rgb + texColor.rgb * vout_adjustedMie.rgb;
+  float fogFactor = vout_texCoordAndFogFactor.w;
+  vec4 color;
+  color.rgb = mix(fogColor.rgb, scatteredColor, fogFactor);
+  color.a = texColor.a;
+
+  gl_FragColor = computeDebugPixelColor(color);
+}
+
+
+//============================= ground sun on overlay (default)
+#if defined(OVERLAY)
+// Similar to above, but sets output alpha to zero when the projected texture
+// coordinates are outside of the [0,1] range.
+void AtmosphereGroundSunOnOverlayFragShader() {
+  // Get the texture color for the object. The projective component is to
+  // allow us to do Arbitrary Ground Overlays.
+  // If texturing is off, use white as diffuse color. Otherwise use color
+  // from texture.
+  lowp vec4 texColor = mix(groundColor,
+      texture2DProj(groundTexture, vout_texCoordAndFogFactor.xyz) * groundColor,
+      has_texture);
+  // Perform texture edge clamping for ground overlays by setting alpha to zero
+  // outside of texture coordinate range [0, 1]
+  vec2 stOverZ = vout_texCoordAndFogFactor.xy / vout_texCoordAndFogFactor.z;
+  texColor.a = GetMaskedOverlayAlpha(texColor.a, stOverZ);
+
+  vec3 scatteredColor = vout_rayleigh.rgb + texColor.rgb * vout_adjustedMie.rgb;
+  float fogFactor = vout_texCoordAndFogFactor.w;
+  vec4 color;
+  color.rgb = mix(fogColor.rgb, scatteredColor, fogFactor);
+  color.a = texColor.a;
+  gl_FragColor = computeDebugPixelColor(color);
+}
+#endif // defined(OVERLAY)
+#endif // defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_ON) && !defined(USE_IMPROVED_SHADER_VARIATION)
+
+//============================== ground sun on (improved)
+#if defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_ON) && defined(USE_IMPROVED_SHADER_VARIATION)
+uniform vec3 worldOriginInView;
+// The direction vector to the light source.
+uniform vec4 cameraToSunDirAndExposure;
+// xyz: Extra ambient color that is stronger during sunsets (and sunrises).
+// w: density used in fog exp2 function.
+uniform vec4 sunsetAmbientAndFogDensity;
+uniform vec4 fogColor;
+
+varying vec4 vout_viewPosAndNormalDotSun;
+#if defined(MORPH_VERTICES)
+varying vec4 vout_blendTexCoord;
+#endif // defined(MORPH_VERTICES)
+
+// Implements the abstract function defined in atmosphere.glsllib.
+// Returns a fading factor to attenuate the atmospheric effects when the camera
+// altitude decreases, unless the view zenith angle gets close to the horizon
+// angle.
+float atmosphereTweak(float r, float mu) {
+  float r0 = max(kMinCameraRadius, cameraAndSunState.x);
+  float muHoriz = -sqrt(1.0 - 1.0 / (r * r));
+  float angleFalloff = pow((1.0 + mu) / (1.0 + muHoriz), atmosphereTweaks.y);
+  return clamp(angleFalloff, 0.1, 1.0) * atmosphereTweaks.x;
+}
+
+vec4 ImprovedAtmosphereGroundSunOnAboveWater(vec4 texColor) {
+  // Computes the ground albedo, i.e. the proportion of incident ligth reflected
+  // by the ground, for each r,g,b wavelength, divided by pi. Ideally the ground
+  // texture would directly contain this physical quantity, but in fact it
+  // contains some uncalibrated values. Assuming that these values correctly
+  // represent the albedo, and that they are simply gamma corrected as in almost
+  // all images with a gamma value of 2.2, we can compute the albedo with a
+  // pow(color.rgb, 2.2) or approximate it with a square to avoid a costly pow
+  // function:
+  vec3 albedoOverPi = texColor.rgb * texColor.rgb * (0.55 / kPi);
+
+  // Computes the fragment position in geocentric coordinates.
+  vec3 groundPos = vout_viewPosAndNormalDotSun.xyz - worldOriginInView.xyz;
+
+  // Computes the radiance of the Sun reaching groundPos, relatively to the
+  // outer Sun radiance. This is the transmittance of the atmosphere from the
+  // ground to the top atmosphere boundary in the Sun direction.
+  float gR = length(groundPos);
+  float gMuS = dot(groundPos, cameraToSunDirAndExposure.xyz) / gR;
+  vec3 sunRadiance = atmoTex(gR, gMuS).rgb;
+
+  // Computes the irradiance due to the sky dome (excluding the Sun).
+  vec3 skyIrradiance = skyTex(gR, gMuS) * atmosphereTweaks.x;
+  // Tweaks the sky irradiance to avoid a dark ground during night.
+  float night = smoothstep(0.0, 0.2, -gMuS) * atmosphereTweaks.z;
+  vec3 gSkyIrradiance = max(skyIrradiance, vec3(0.002, 0.005, 0.01) * night);
+
+  // Computes the radiance reflected by the ground (using a Lambertian BRDF).
+  vec3 groundL = albedoOverPi *
+      (max(vout_viewPosAndNormalDotSun.w, 0.0) * sunRadiance + gSkyIrradiance);
+
+  vec3 pixel = aerialPerspective(groundL, -worldOriginInView, groundPos,
+      cameraToSunDirAndExposure.xyz, atmosphereTweaks.w);
+  return vec4(pixel, texColor.a);
+}
+
+vec4 ImprovedAtmosphereGroundSunOnBelowWater(vec4 texColor) {
+  // The following shading is completely ad-hoc and not physically-based at all.
+  // For instance distant water is always blue, even at night, which is of
+  // course wrong. Also the Sun light is not attenuated with depth, so that the
+  // sea bottom is always visible (in reality everything becomes completely dark
+  // at a few dozens meters below the surface).
+  texColor.rgb *= 0.66 * max(vout_viewPosAndNormalDotSun.w, 0.33);
+  float fogDistSq = dot(vout_viewPosAndNormalDotSun.xyz,
+      vout_viewPosAndNormalDotSun.xyz);
+  float fogFactor = exp(-2.0 * sunsetAmbientAndFogDensity.w * sqrt(fogDistSq));
+  return vec4(mix(fogColor.rgb, texColor.rgb, fogFactor), texColor.a);
+}
+
+void ImprovedAtmosphereGroundSunOnFragShader() {
+#if defined(OVERLAY)
+  // Get the texture color for the object. The projective component is to
+  // allow us to do Arbitrary Ground Overlays.
+  // If texturing is off, use white as diffuse color. Otherwise use color
+  // from texture.
+  lowp vec4 texColor = mix(
+      vec4(1.0),
+      texture2DProj(groundTexture, vout_texCoordAndFogFactor.xyz),
+      has_texture);
+  // Perform texture edge clamping for ground overlays by setting alpha to zero
+  // outside of texture coordinate range [0, 1]
+  vec2 stOverZ = vout_texCoordAndFogFactor.xy / vout_texCoordAndFogFactor.z;
+  texColor.a = GetMaskedOverlayAlpha(texColor.a, stOverZ);
+#else
+  // If texturing is off, use white as diffuse color. Otherwise use color
+  // from texture.
+  vec4 texColor;
+  if (has_texture != 0.0) {
+    texColor = texture2D(groundTexture, vout_texCoordAndFogFactor.st);
+    #if defined(MORPH_VERTICES)
+      float blend_param = blendUnpopPixelParams[0];
+      if (blend_param != 0.) {
+        // We are blending between 2 textures.
+        vec4 blendBlendColor = texture2D(blendTexture, vout_blendTexCoord.st);
+        // Compute final pixel color, blend between texture 1 and texture 2
+        texColor = mix(texColor, blendBlendColor, blend_param);
+      }
+    #endif // defined(MORPH_VERTICES)
+  } else {
+    texColor = vec4(1.0);
+  }
+#endif
+  vec4 color;
+  // TODO(ebruneton): water level may not always be exactly at r=1,
+  // how can we detect that?
+  if (cameraAndSunState.x < 1.0) {
+    color = ImprovedAtmosphereGroundSunOnBelowWater(texColor);
+  } else {
+    color = ImprovedAtmosphereGroundSunOnAboveWater(texColor);
+  }
+  // Apply lighting to models.
+  if (has_lighting == 1.0) {
+    color = color * v_global_color;
+  }
+  #if defined(MORPH_VERTICES)
+    float unpop_alpha = blendUnpopPixelParams[1];
+    color.a *= unpop_alpha;
+  #endif // defined(MORPH_VERTICES)
+  gl_FragColor = computeDebugPixelColor(color);
+}
+#endif // defined(ATMOSPHERE_ON) && defined(GROUND) && defined(SUN_ON) && defined(USE_IMPROVED_SHADER_VARIATION)
+
+//================================ sky sun off==========================
+#if defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_OFF)
+varying vec4 vout_rayleighT;
+uniform vec4 skySunOffPixelParams;
+uniform lowp sampler2D skyMap;
+
+void AtmosphereSkySunOffFragShader() {
+  // The rayleigh map's s-coordinate depends on camera height and is computed
+  // on the CPU.
+  float rayleighS = skySunOffPixelParams.x;
+  lowp vec4 color = texture2D(skyMap, vec2(rayleighS, vout_rayleighT.x));
+
+  gl_FragColor = color;
+}
+#endif // defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_OFF)
+
+//================================ sky sun on (default)======================
+#if defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_ON) && !defined(USE_IMPROVED_SHADER_VARIATION)
+varying vec4 vout_rayleighColorAndSkyOpacity;
+varying vec4 vout_vertToCameraDir;
+// The direction vector to the light source in View coordinate system.
+uniform vec4 cameraToSunDirAndExposure;
+// xyz: Attribute for Mie color corresponding to the brightest spot in the
+//      sky (i.e. usually the sun's front color during the day, and black
+//      during the night).
+//      This is computed on the CPU in double floating precision to avoid
+//      precision problems on the GPU.
+// w: Sun strength: [0, 1] where 0 = no sun, 1 = full strength.
+uniform vec4 brightestMieColorAndSunStrength;
+
+// Calculates the Rayleigh phase function.
+float getRayleighPhase(float cosAngle2) {
+  return 0.75 + 0.75 * cosAngle2;
+}
+
+// Calculates the Mie phase function.
+float getMiePhase(float cosAngle, float cosAngle2) {
+  return 1.5 * ((1.0 - gMieConst2) / (2.0 + gMieConst2)) * (1.0 + cosAngle2) /
+    pow(1.0 + gMieConst2 - 2.0 * gMieConst * cosAngle, 1.5);
+}
+
+// Returns the luminance of an RGB color.
+float getLuminance(vec3 color) {
+  const vec3 luminance = vec3(0.3, 0.59, 0.11);
+  return dot(luminance, color);
+}
+
+void AtmosphereSkySunOnFragShader() {
+  // Variables needed to compute Rayleigh and Mie phases.
+  float cosAngle = dot(cameraToSunDirAndExposure.xyz,
+      vout_vertToCameraDir.xyz) / length(vout_vertToCameraDir.xyz);
+  // Tweak cosAngle by sunStrength. This dims the sun strength for lower
+  // values of sunStrength.
+  cosAngle *= brightestMieColorAndSunStrength.w;
+  float cosAngle2 = cosAngle * cosAngle;
+  // Compute final color using Rayleigh and Mie phases.
+  // The alpha component gets overwritten later.
+  vec4 color;
+  color.rgb = getRayleighPhase(cosAngle2) * vout_rayleighColorAndSkyOpacity.rgb +
+    getMiePhase(cosAngle, cosAngle2) * brightestMieColorAndSunStrength.rgb;
+  // Tone HDR using constant exposure for the whole scene.
+  color.rgb = vec3(1.0) - exp(color.rgb * -cameraToSunDirAndExposure.w);
+  // Use color's luminance to compute its opacity.
+  float luminanceAlphaComponent = 2.0 * getLuminance(color.rgb);
+  color.a = luminanceAlphaComponent + vout_rayleighColorAndSkyOpacity.a;
+  gl_FragColor = color;
+}
+#endif // defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_ON) && !defined(USE_IMPROVED_SHADER_VARIATION)
+
+//================================ sky sun on (improved)======================
+#if defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_ON) && defined(USE_IMPROVED_SHADER_VARIATION)
+
+// The radius of the atmosphere mesh, divided by the Earth radius.
+const float kAtmosphereMeshRadius = (6378.0 + 170.0) / 6378.0;
+
+uniform vec3 worldOriginInView;
+// The direction vector to the light source.
+uniform vec4 cameraToSunDirAndExposure;
+
+varying vec3 vout_viewPos;  // Vertex position in view coordinates.
+varying vec3 vout_sunPos;  // Vertex position in Sun coordinates.
+
+// Implements the abstract function defined in atmosphere.glsllib.
+float atmosphereTweak(float r, float mu) {
+  return atmosphereTweaks.x;
+}
+
+// Computes the final pixel color and alpha value from its radiance. The color
+// is computed with a tone mapping operator to map the high dynamic range of the
+// radiance values to the low dynamic range of the screen. The alpha value is
+// used to approximate the correct compositing, which should in theory occur
+// before tone mapping, and not after as we do for stars (see below). This alpha
+// value is computed with an adhoc formula so that stars only appear in the very
+// dark areas of the sky (i.e at night).
+vec4 fragColor(vec3 pixelL) {
+  pixelL = toneMapping(pixelL, atmosphereTweaks.w);
+  return vec4(pixelL, dot(pixelL, vec3(2.0)));
+}
+
+void ImprovedAtmosphereSkySunOnFragShader() {
+  // Computes the view ray direction in view and Sun coordinates.
+  vec3 viewViewRayDir = normalize(vout_viewPos);
+  vec3 sunViewRayDir = normalize(vout_sunPos);
+
+  // Computes the radiance of the background behind the atmosphere. This should
+  // includes the Sun, the Moon and the stars, but here we only take the Sun
+  // into account. The Moon would not be difficult to handle, but rendering the
+  // stars here would require a very high res skymap. Instead, we render them
+  // with points, before rendering the sky, and we approximate the correct
+  // compositing, toneMapping(starL * transmittance + inscatterL), with alpha
+  // blending, i.e. with toneMapping(inscatterL) + (1 - a) * starL. We compute
+  // alpha with an adhoc formula based on toneMapping(inscatterL) -- see the
+  // fragColor function.
+  vec3 backgroundL = outerSunRadiance(sunViewRayDir);
+
+  // Computes the camera to Earth center distance r, the view direction zenith
+  // angle cosinus mu, the Sun zenith angle cosinus muS, and the phase angle
+  // cosinus nu.
+  float r = cameraAndSunState.x;
+  float rMu = -dot(worldOriginInView.xyz, viewViewRayDir);
+  float rMuS = -dot(worldOriginInView.xyz, cameraToSunDirAndExposure.xyz);
+  float nu = dot(viewViewRayDir, cameraToSunDirAndExposure.xyz);
+  bool hitAtmosphere = true;
+
+  // If the camera is outside the atmosphere, moves it to the entry point of the
+  // view ray inside the atmosphere, if it exists (otherwise the view ray does
+  // not traverse the atmosphere, and so we can return the background radiance).
+  if (r > kAtmosphereRadius) {
+    // Computes the distance from the view ray to the Earth center, squared.
+    float hSq = r * r - rMu * rMu;
+    // Computes the distance to the view ray entry point in the atmosphere.
+    float delta = kAtmosphereRadius * kAtmosphereRadius - hSq;
+    float distanceToAtmosphereEntryPoint = -rMu - sqrt(delta);
+    if (delta < 0.0 || distanceToAtmosphereEntryPoint < 0.0) {
+      // The view ray does not hit the atmosphere, return the background color,
+      // i.e the Sun color. In order to avoid discontinuities when switching
+      // from the Sun color computed here, to the Sun color resulting from the
+      // Sun billboard, we use an alpha value going from 1 at kAtmosphereRadius
+      // to 0 at kAtmosphereMeshRadius.
+      const float kAtmosphereRadiusSq = kAtmosphereRadius * kAtmosphereRadius;
+      const float kMeshRadiusSq = kAtmosphereMeshRadius * kAtmosphereMeshRadius;
+      float a = (kMeshRadiusSq - hSq) / (kMeshRadiusSq - kAtmosphereRadiusSq);
+      gl_FragColor = vec4(toneMapping(backgroundL, atmosphereTweaks.w) * a, a);
+      hitAtmosphere = false;
+    } else {
+      // Moves the camera to the view ray entry point inside the atmosphere.
+      r = kAtmosphereRadius;
+      rMu += distanceToAtmosphereEntryPoint;
+      rMuS += distanceToAtmosphereEntryPoint * nu;
+    }
+  }
+
+  if (hitAtmosphere) {
+    // Computes the light which is scattered towards the viewer along the view
+    // ray, and the transmittance of the atmosphere along this ray.
+    vec3 transmittance;
+    vec3 inscatterL = inscatter(r, rMu / r, rMuS / r, nu, atmosphereTweaks.w,
+        transmittance);
+
+    // The pixel radiance is the background radiance, multiplied by the
+    // atmosphere transmittance and augmented by the inscattered light.
+    vec3 pixelL = backgroundL * transmittance + inscatterL;
+
+    gl_FragColor = fragColor(pixelL);
+  }
+}
+#endif // defined(ATMOSPHERE_ON) && defined(SKY) && defined(SUN_ON) && defined(USE_IMPROVED_SHADER_VARIATION)
+
+// =================================================================
+#if defined(ATMOSPHERE_OFF) && defined(SUN_OFF)
+varying vec4 vout_groundTexCoord;  // Transformed texture coordinate.
+
+void NoAtmosphereSunOffFragShader() {
+  vec4 diffuseColor = texture2D(groundTexture, vout_groundTexCoord.st);
+  gl_FragColor = computeDebugPixelColor(diffuseColor);
+}
+#endif // defined(ATMOSPHERE_OFF) && defined(SUN_OFF)
+
+// ====================================================================
+#if defined(ATMOSPHERE_OFF) && defined(SUN_ON)
+varying vec4 vout_transformedCoords;
+varying float vout_diffuse_factor;
+
+void NoAtmosphereSunOnFragShader() {
+  // Get the texture color for the object.
+  vec4 diffuseColor = texture2D(groundTexture, vout_transformedCoords.xy);
+  diffuseColor.rgb *= vout_diffuse_factor;
+  gl_FragColor = computeDebugPixelColor(diffuseColor);
+}
+#endif // defined(ATMOSPHERE_OFF) && defined(SUN_ON)
+
+// ===================================================================
+#if defined(ATMOSPHERE_OFF) && defined(GROUND) && defined(OVERLAY)
+varying vec4 vout_texCoord;
+
+void NoAtmosphereGroundOverlayFragShader() {
+  // Get the texture color for the object. The projective component is to
+  // allow us to do Arbitrary Ground Overlays.
+  vec4 texColor = (texture2DProj(groundTexture, vout_texCoord.xyw)) *
+      groundColor;
+
+  // Compute projected texture coordinates
+  vec2 stOverW = vout_texCoord.xy / vout_texCoord.w;
+  // Zero out alpha outside of texture edges.
+  texColor.a = GetMaskedOverlayAlpha(texColor.a, stOverW);
+  gl_FragColor = computeDebugPixelColor(texColor);
+}
+#endif // defined(ATMOSPHERE_OFF) && defined(GROUND) && defined(OVERLAY)
+
+// ===================================================================
+#if defined(ATMOSPHERE_OFF) && defined(MAPSTAR)
+varying vec4 vout_texCoord;
+
+float DistanceToSegment(in vec2 p, in vec4 segment) {
+  vec2 start = segment.xy;
+  vec2 end = segment.zw;
+  vec2 seg_ray = end - start;
+  float len2 = dot(seg_ray, seg_ray);
+  if (len2 == 0.)
+    return 100.;  // TODO(jrohlf): Handle points.
+  vec2 p_ray = p - start;
+  float t = dot(p_ray, seg_ray) / len2;
+  return t < 0. ? length(p_ray) : t > 1.0 ? distance(p, end) :
+      distance(start + seg_ray * vec2(t), p);
+}
+
+// Returns closest dist in x and closest style in y
+vec2 FindClosestSegment(in vec2 tex_coord,
+                        in vec4 seg0,
+                        in vec4 seg1,
+                        in vec4 seg2,
+                        in vec4 seg3,
+                        in vec4 style_ids) {
+  vec2 closest0 = vec2(DistanceToSegment(tex_coord, seg0), style_ids[0]);
+  vec2 closest1 = vec2(DistanceToSegment(tex_coord, seg1), style_ids[1]);
+  vec2 closest2 = vec2(DistanceToSegment(tex_coord, seg2), style_ids[2]);
+  vec2 closest3 = vec2(DistanceToSegment(tex_coord, seg3), style_ids[3]);
+
+  vec2 closest = closest0.x < closest1.x ? closest0 : closest1;
+  closest = closest2.x < closest.x ? closest2 : closest;
+  closest = closest3.x < closest.x ? closest3 : closest;
+  return closest;
+}
+void NoAtmosphereMapStarFragShader() {
+  vec2 tex_coord = vout_texCoord.st;  // Range is 0-1.
+  // Get dimension of mapstar which is half texture size.
+  float dim = groundColor.r * 255.; // e.g., 4, texture size is 8x8.
+  float bucket_width = 1. / dim;  // Width of bucket in integers.
+  // Snap to integer grid, [0-dim]
+  vec2 bucket = vec2(floor(tex_coord.x * dim),
+                     floor(tex_coord.y * dim));
+  // Make sure s,t of exactly dim falls into previous bucket.
+  bucket = vec2(min(bucket.x, dim - 1.), min(bucket.y, dim - 1.));
+  // Scale back to 0-1, bucket is now origin of block
+  bucket *= bucket_width;
+  // Get center of lower left texel in bucket to ensure we aren't on bucket
+  // boundary and sample the correct texel.
+  float texel_width = bucket_width * .5;
+  vec2 center = bucket + vec2(texel_width * .5);
+
+  // Grab 2x2 texel block.
+  vec4 seg0 = texture2D(groundTexture, center);
+  vec4 seg1 = texture2D(groundTexture,
+                         vec2(center.x + texel_width, center.y));
+  vec4 seg2 = texture2D(groundTexture,
+                         vec2(center.x, center.y + texel_width));
+  vec4 seg3 = texture2D(groundTexture,
+                         vec2(center.x + texel_width, center.y + texel_width));
+
+  // Style id texture dimensions are dim x dim.
+  vec4 style_ids = texture2D(styleIdTexture, bucket + vec2(texel_width));
+
+  // .x is distance, .y is style id.
+  vec2 closest = FindClosestSegment(tex_coord,
+                                    seg0, seg1, seg2, seg3, style_ids);
+  // Bias to midpoint of texture in x, bias to center of texel in y.
+  // 4 is hack scale to get more tex resolution involved, see
+  // MapStar::BuildStyleRaster().
+  vec4 color = texture2D(styleTexture,
+                         vec2(closest.x * 4. + .5, closest.y + 1./512.));
+  gl_FragColor = color;
+}
+#endif // defined(ATMOSPHERE_OFF) && defined(MAPSTAR)
+
+// ================================================================
+// Forward-declare top-level functions.  (This may fix some pre-processor issues
+// when loading the shaders on Mali embedded GPUs.)
+void AtmosphereGroundSunOnOverlayFragShader();
+void AtmosphereGroundSunOnFragShader();
+void AtmosphereGroundSunOffOverlayFragShader();
+void AtmosphereGroundSunOffFragShader();
+void AtmosphereSkySunOnFragShader();
+void AtmosphereSkySunOffFragShader();
+void ImprovedAtmosphereGroundSunOnFragShader();
+void ImprovedAtmosphereSkySunOnFragShader();
+void NoAtmosphereSunOnFragShader();
+void NoAtmosphereSunOffFragShader();
+void NoAtmosphereGroundOverlayFragShader();
+void NoAtmosphereMapStarFragShader();
+
+void main()
+{
+  // All #elif directives have been replaced with #else + nested #if.
+  // Do not use #elif directives in shader files because they cause errors
+  // when loaded on Mali-400 based devices.  See bug #6662252.
+#if defined(ATMOSPHERE_ON)
+  #if defined(GROUND)
+    #if defined(SUN_ON)
+      #if defined(OVERLAY)
+        #if defined(USE_IMPROVED_SHADER_VARIATION)
+          ImprovedAtmosphereGroundSunOnFragShader();
+        #else
+          AtmosphereGroundSunOnOverlayFragShader();
+        #endif
+      #else
+        #if defined(USE_IMPROVED_SHADER_VARIATION)
+          ImprovedAtmosphereGroundSunOnFragShader();
+        #else
+          AtmosphereGroundSunOnFragShader();
+        #endif
+      #endif
+    #else
+      #if defined(SUN_OFF)
+        #if defined(OVERLAY)
+          AtmosphereGroundSunOffOverlayFragShader();
+        #else
+          AtmosphereGroundSunOffFragShader();
+        #endif
+      #else
+        #error Invalid shader config 1
+      #endif
+    #endif
+    #if defined(QUADRANT_ALPHAS)
+      gl_FragColor.a *= vout_alpha;
+    #endif
+  #else
+    #if defined(SKY)
+      #if defined(SUN_ON)
+        #if defined(USE_IMPROVED_SHADER_VARIATION)
+          ImprovedAtmosphereSkySunOnFragShader();
+        #else
+          AtmosphereSkySunOnFragShader();
+        #endif
+      #else
+        #if defined(SUN_OFF)
+          AtmosphereSkySunOffFragShader();
+        #else
+          #error Invalid shader config 2
+        #endif
+      #endif
+    #else
+      #if defined(USE_IMPROVED_SHADER_VARIATION)
+        gl_FragColor = computeInscatter(gl_FragCoord.xy, atmosphereTweaks.w);
+      #else
+        #error Invalid shader config 3
+      #endif
+    #endif
+  #endif
+#elif defined(ATMOSPHERE_OFF)
+    #if defined(GROUND) && defined(OVERLAY)
+      NoAtmosphereGroundOverlayFragShader();
+    #elif defined(MAPSTAR)
+      NoAtmosphereMapStarFragShader();
+    #else
+      #if defined(SUN_ON)
+        NoAtmosphereSunOnFragShader();
+      #elif defined(SUN_OFF)
+        NoAtmosphereSunOffFragShader();
+      #else
+        #error Invalid shader config 4
+      #endif
+    #endif
+    #if defined(QUADRANT_ALPHAS)
+      gl_FragColor.a *= vout_alpha;
+    #endif
+#else
+  #error Invalid shader config 6
+#endif
+
+#ifdef VIEWSHED_DEPTH_WRITE
+  // The viewshed length write needs to happen regardless of the
+  // rendering mode (sun, atmosphere), as the occlusion information is
+  // needed.  Write floating-point value into RGBA.  This is done so
+  // that we can use an RGBA 32-bit (8888) FBO while capturing
+  // distance, and subsequently binding cube map.
+  gl_FragColor = FloatToRgba(viewshedLen);
+#elif !defined(OVERLAY)
+  // Apply global color operations to base terrain.  This includes
+  // rendering of viewshed and color desaturation.
+
+  #if defined(COLOR_DESATURATION)
+    ApplyColorDesaturation(gl_FragColor, colorDesaturation.x);
+  #endif
+
+  #if defined(VIEWSHED_RENDER) && !defined(SKY)
+    ApplyViewshed(gl_FragColor);
+  #endif  // defined(VIEWSHED_RENDER) && !defined(SKY)
+
+#endif
+}

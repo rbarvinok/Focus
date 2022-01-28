@@ -1,0 +1,68 @@
+// Parallax texture scaling.
+#define elongation0                   1.
+#define elongation1                   0.5
+#define elongation2                   0.25
+#define elongation3                   0.125
+
+// The texture coordinates (tex_coord) are actually 2D, with 2 additional
+// interpolated arguments:
+//   x:  u
+//   y:  v
+//   z:  opacity scale [0, 1]
+//   w:  width of current trapezoid location (for uniform interpolation)
+varying vec4 vout_tex_coord;
+
+// pixel_args contains 3 values:
+//   x:  time
+//   y:  time-based opacity value (for transitions - same value as VS)
+//   z:  precipitation intensity value
+uniform vec4 pixel_args;
+// Time scroll rates for the textures.
+// xyzw:  the scroll shift with respect to time of the texture coordinates
+uniform vec4 time_scrolls;
+uniform sampler2D texture0;
+uniform sampler2D texture1;
+uniform sampler2D texture2;
+uniform sampler2D texture3; 
+
+void main() {
+  //float time = pixel_args[0];
+  float time_opacity = pixel_args[1];
+  float precipitation_opacity = pixel_args[2];
+  
+  // TODO(ajlaw):  use projective texture mapping to move division away from PS
+  // TODO(ajlaw):  move the sqrt out of the PS
+  float cone_opacity = sqrt(vout_tex_coord.z);
+  // Divide is required for uniform interpolation over the trapezoidal pieces.
+  vec2 reshaped_tex_coord = vout_tex_coord.xy / vout_tex_coord.ww;
+  vec2 tex_coord0 = reshaped_tex_coord / elongation0;
+  vec2 tex_coord1 = reshaped_tex_coord / elongation1;
+  vec2 tex_coord2 = reshaped_tex_coord / elongation2;
+  vec2 tex_coord3 = reshaped_tex_coord / elongation3;
+  tex_coord0.y += time_scrolls[0];
+  tex_coord1.y += time_scrolls[1];
+  tex_coord2.y += time_scrolls[2];
+  tex_coord3.y += time_scrolls[3];
+  vec4 tex_color0 = texture2D(texture0, tex_coord0);
+  vec4 tex_color1 = texture2D(texture1, tex_coord1);
+  vec4 tex_color2 = texture2D(texture2, tex_coord2);
+  vec4 tex_color3 = texture2D(texture3, tex_coord3);
+  // With a black/white texture, just pull out one color channel for intensity.
+  float opacity0 = tex_color0.x;
+  float opacity1 = tex_color1.x;
+  float opacity2 = tex_color2.x;
+  float opacity3 = tex_color3.x;
+  // Proportionate opacity per texture.
+  float total_opacity = opacity0 + opacity1 + opacity2 + opacity3;
+  vec4 opacity = vec4(opacity0 / total_opacity,
+                                opacity1 / total_opacity,
+                                opacity2 / total_opacity,
+                                opacity3 / total_opacity);
+  vec3 color = vec3(tex_color0.xyz * opacity.xxx +
+                              tex_color1.xyz * opacity.yyy +
+                              tex_color2.xyz * opacity.zzz +
+                              tex_color3.xyz * opacity.www);
+  float final_intensity = color.x;  // Single channel sufficient.
+  gl_FragColor = vec4(color.xyz,
+      final_intensity * precipitation_opacity * cone_opacity * time_opacity);
+}

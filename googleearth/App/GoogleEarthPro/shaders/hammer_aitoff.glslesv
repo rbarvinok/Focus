@@ -1,0 +1,12 @@
+//!GL2
+#if defined(GL_ES)
+precision highp float;
+#endif
+
+attribute vec4 ig_Vertex;
+
+uniform mat4 orthoMatrix;
+
+void main() {
+  gl_Position = orthoMatrix * ig_Vertex;
+}

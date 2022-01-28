@@ -1,0 +1,83 @@
+$input "glsles.h"
+$input "speedtree_configuration_glsles.h"
+$input "speedtree_utils_glsles.h"
+
+uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+
+#ifdef GOOGLE_COMPUTE_FOG
+varying vec4  vout_fogData; // used to help with fog & sky effect
+#endif
+varying vec2  vout_texCoords;  // xy = texcoords_image_0
+varying float  vout_alphaScalar;  // x = alpha scalar
+varying vec3  vout_normalMapVec;  // xyz = normal map adjust
+                                    // Per-species light contributions.
+varying vec4  vout_ambient;       // rgb = material_ambient
+varying vec4  vout_diffuse;  // rgb = material_diffuse,
+
+void main()
+{
+    // setup aliases (taken from incoming data)
+    vec2 c_vTexCoords = vout_texCoords.xy;
+
+    // setup aliases (taken from global variables)
+    // TODO(chrisco): multiply light color in either here or in the C++.
+    vec4 c_vAmbientLight = vout_ambient;
+    vec4 c_vDiffuseLight = vout_diffuse;
+    float  c_fLightScalar = vout_diffuse.a;
+
+    // texture lookups
+    vec4 texDiffuseTexture = texture2D(diffuseMap, c_vTexCoords);
+    vec4 texNormalTexture = texture2D(normalMap, c_vTexCoords);
+
+    // pull out different parts of the textures
+    vec3 vDiffuseMap = texDiffuseTexture.rgb;
+    float fAlphaMask = texDiffuseTexture.a;
+    vec3 vNormalMap = texNormalTexture.rgb;
+    float fAmbient = texNormalTexture.a;
+
+    // compute alpha scalar
+    float fAlphaScalar = vout_alphaScalar;
+#ifdef SPEEDTREE_ALPHA_TESTING
+    // introduce noise into the alpha channel to make alpha tested transitions smoother
+    fAlphaScalar -= (1 - fAlphaScalar) * AlphaTestNoise(c_fBillboardNoiseScalar * c_vTexCoords);
+#endif
+    float fAlphaOut = fAlphaMask * fAlphaScalar;
+#ifdef SPEEDTREE_ALPHA_TESTING
+    fAlphaOut -= 0.1;
+#endif
+    PossibleEarlyOut(fAlphaOut);
+
+    // lighting computation
+    vec3 vNormal = DecodeVectorFromColor(vNormalMap);
+    float fNormalMapLighting = dot(vNormal, normalize(vout_normalMapVec));
+
+    // compute diffuse contribution
+    vec3 vDiffuseComponent = c_vDiffuseLight.rgb;
+
+    // compute ambient contribution
+#ifdef SPEEDTREE_AMBIENT_CONTRAST
+    float c_fAmbientContrastParameter = g_vMaterialExtras.w;
+    float fAmbientContrast = lerp(c_fAmbientContrastParameter, 1.0, abs(fNormalMapLighting));
+    vec3 vAmbientComponent = fAmbient * c_vAmbientLight.rgb * fAmbientContrast;
+#else
+    vec3 vAmbientComponent = fAmbient * c_vAmbientLight.rgb;
+#endif
+    fNormalMapLighting = saturate(fNormalMapLighting);
+
+    // get shadow contribution if enabled
+#if defined(SPEEDTREE_SHADOWS_ENABLED) && defined(SPEEDTREE_BILLBOARDS_RECEIVE_SHADOWS)
+    fNormalMapLighting *= ShadowMapLookup(sIn.m_av2dPosInLightSpace, sIn.m_fDepth);
+#endif
+
+    // compute whole light
+    vec3 vOutColor = lerp(vAmbientComponent, vDiffuseComponent * c_fLightScalar, fNormalMapLighting);
+    vOutColor *= vDiffuseMap;
+
+#ifdef GOOGLE_COMPUTE_FOG
+    // fog the output (non-trivial with sky contribution)
+    vOutColor = FogPixel(vout_fogData, vOutColor);
+#endif
+    gl_FragColor = vec4(vOutColor, fAlphaOut);
+    DoAlphaTestIfNeeded(gl_FragColor.a);
+}

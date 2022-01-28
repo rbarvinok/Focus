@@ -1,0 +1,174 @@
+%
+% Cirrus SR22.
+%
+
+model_name = 'Cirrus SR22'
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Minimum eye distance to objects.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+d_E_min = 1
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Approach speed, power and flap setting.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+V_approach = 45
+D_F_approach = .2
+D_P_approach = .4
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cruise speed, power and flap setting.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+V_cruise = 65
+D_F_cruise = .0
+D_P_cruise = .7
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Constants for terrain elevation filters.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+spring_e_T = 80
+damper_e_T = 15
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Spring/damper constants for camera rotation.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Critical damping: spring = damper^2/4.
+spring_vertical = 80
+damper_vertical = 15
+spring_horizontal = 80
+damper_horizontal = 15
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Collision vertices.
+% VREF:  Zero is below the nose on the ground.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+p_v = [
+  % Main wheels.
+  [ -2.9  -1.6 -.3 ]
+  [ -2.9   1.6 -.3 ]
+  % Nosewheel.
+  [ -1     0   -.3 ]
+  % Tail skid.
+  [ -7     0  -1.5 ]
+  % Top of cockpit.
+  [ -3     0  -2   ]
+]
+
+% Fixed gear installation.
+first_fixed = 0
+
+% Spring/damper format:
+% [ C_0 C_s C_d f F_max ]
+spring_damper = [
+  [ 2500 5e4 1e4 .05 2e5 ]
+  [ 2500 5e4 1e4 .05 2e5 ]
+  [ 500  3e4 1e4 .05 1e5 ]
+  [ 500  5e3 3e3 .05 3e4 ]
+]
+
+% Contact patch format:
+% [ C_r_0 C_r C_b C_y K_s K_d C_max_x C_max_y b dalpha_dDR ]
+contact_patch = [
+  % Main wheels.
+  [ 200 8e-4 2e3 6e3 2.1e4 1.2e4 .8 .8 1.1 0 ]
+  [ 200 8e-4 2e3 6e3 2.1e4 1.2e4 .8 .8 1.1 0 ]
+  % Nosewheel.  Only some Y force, no static friction.
+  [ 0   0    0   6e3 0     0     0  .8 -1  .7 ]
+]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Power plant.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+P_max = 210e3
+F_max = 6000
+P_ratio_reverse = 0
+P_ratio_alpha = 1.4
+p_T_v = [ [ -.2 0 -1 ] ]
+d_T_v = [ [ 1 -.02 0 ] ]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Eye point.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Pilot sits on the left.
+p_E_v = [ -2 -.5 -1.8 ]
+
+% Reference values.
+
+b = 11.7
+c_bar = 1.15
+
+% collision model values, leave at 1 for now.
+d_ref = 1
+v_ref = 1
+F_ref = 1
+
+
+% Mass/cm/inertia.
+
+m = 1315
+
+J = [
+  [ 6500    0    0 ]
+  [    0 2500    0 ]
+  [    0    0 7700 ]
+]
+
+p_CM_v = [ -2.6 0 -1 ]
+p_AC_v = [ -2.6 0 -1 ]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Aerodynamics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Forces.
+alpha_z_0_deg = -4.5
+dalpha_z_deg_dDF = -2.5
+C_D_0 = 0.0278108
+dC_D_dDG = 0
+dC_D_dDF = .03
+dC_L_dalpha_deg = .095
+dC_L_dS = -1.5
+C_L_max_0 = 1.42
+dC_L_max_dDF = .5
+d2C_D_dC_L2 = 0.124852
+d2C_D_dC_Y2 = .1
+dC_Y_dDR = .001
+dC_Y_dbeta_deg = .025
+dC_Y_dp_hat = .0001
+dC_Y_dr_hat = -.0001
+
+% *** Moments ***
+
+% *** Pitch ***
+C_m_0 = 1e-5
+dC_m_dDE = .25
+dC_m_dDE_T = .06
+dC_m_dDF = .03
+dC_m_dDG = 0
+dC_m_dS = -.025
+dC_m_dq_hat = -12
+dC_m_dalpha_deg = -.013
+d2C_m_dbeta2 = -7e-1
+d2C_m_dq_hat2 = -10
+
+% *** Roll ***
+dC_l_dDA = .05
+dC_l_dDR = -1e-5
+dC_l_dbeta_deg = -1e-4
+dC_l_dp_hat_0 = -.43
+dC_l_dp_hat_max = .03
+dC_l_dr_hat_0 = .16
+ddC_l_dp_hat_0_dS = 2.3
+ddC_l_dr_hat_0_dS = 1.3
+d2C_l_dp_hat2 = -12
+
+% *** Yaw ***
+dC_n_dDA = -.01
+dC_n_dDR = .1
+dC_n_dbeta_deg = 5e-3
+dC_n_dp_hat = 0
+dC_n_dr_hat = -.8
+d2C_n_dr_hat2 = -1

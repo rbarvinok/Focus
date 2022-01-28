@@ -1,0 +1,93 @@
+#if defined(GL_ES)
+precision highp float;
+#endif
+
+uniform sampler2D skymapTexture;
+
+// From ViewInfo.
+uniform vec4 view_dir;
+uniform vec4 view_right;
+uniform vec4 view_up;
+
+// viewport_crop.x - crop left
+// viewport_crop.y - crop bottom
+// viewport_crop.z - 2. * crop width / window_width
+// viewport_crop.w - 2. * crop height / window_width
+uniform vec4 viewport_crop;
+
+// Changes based on current date/time.
+uniform mat4 starsToCameraMatrix;
+
+const float kPi = 3.1415926535897932384626433832795;
+const float kPiInverse = 1. / kPi;
+const float eps = 1e-2;
+
+// Projects a view direction to a hammer-aitoff map projection.
+// This is a faster, simplified (but GLSL specific) version of the code in:
+// google3/third_party/astrometry/util/starutil.c
+vec2 project_hammer_aitoff(vec3 dir) {
+  float theta = 0.5 * atan(-dir.x, dir.z);
+  float r = sqrt(dir.x * dir.x + dir.z * dir.z);
+  float diff = abs(dir.x) - eps;
+  // Mitigate "seam" near edge of projeted ellipse.
+  if (diff < 0.)
+    r *= 1. + diff;
+  float sq = inversesqrt(1. + r * cos(theta));
+  float Xp = 0.5 + 0.5 * r * sin(theta) * sq;
+  float Yp = 0.5 + 0.5 * dir.y*sq;
+  return vec2(Xp, Yp);
+}
+
+// Projects a view direction to a platte-carre map projection.
+vec2 project_platte_carre(vec3 dir) {
+  // Galactic coordinates.
+  float latitude = acos(dir.y) - 0.5 * kPi;
+  // Offset the longitude by the galactic north pole longitude, which is about
+  // 33 degrees, or 0.576 radians.
+  float longitude = atan(dir.x, dir.z) - 0.576;
+
+  // Compute sin/cos of lat/long.
+  float sin_latitude = sin(latitude);
+  float cos_latitude = cos(latitude);
+  float sin_longitude = sin(longitude);
+  float cos_longitude = cos(longitude);
+
+  // Convert from galactic to equatorial coordinates.
+  // The declination of the galactic north pole is 27.12825101 degrees.
+  // Here the sine and cosine of this are precomputed.
+  const float kSinGalDeclination = 0.455983793259143;
+  const float kCosGalDeclination = 0.889988078731959;
+
+  // Compute right ascension and declination from latitude and longitude.
+  float sin_decl = cos_latitude * kCosGalDeclination * sin_longitude +
+      sin_latitude * kSinGalDeclination;
+  float sin_ascen = cos_latitude * cos_longitude;
+  float cos_ascen = sin_latitude * kCosGalDeclination - cos_latitude *
+      sin_longitude * kSinGalDeclination;
+  // The right ascension of the galactic north pole is 192.859481 degrees, or
+  // 3.366032942 radians, so we offset by that.
+  float Xp = (atan(sin_ascen, cos_ascen) + 3.366032942) * kPiInverse + 0.5;
+  Xp *= .5;
+  float Yp = asin(sin_decl) * kPiInverse + 0.5;
+  return vec2(Xp, Yp);
+}
+
+void main() {
+  // Map fragment coordinates to -1..1, taking crop into account.
+  vec2 win_coords = gl_FragCoord.xy * viewport_crop.zw + viewport_crop.xy;
+
+  // The direction through this pixel.
+  vec3 dir = view_dir.xyz +
+             view_up.xyz * win_coords.y +
+             view_right.xyz * win_coords.x;
+
+  // Rotate the direction into the map's space.
+  dir = normalize((starsToCameraMatrix * vec4(dir, 1.)).xyz);
+
+  // Project.
+  vec2 coords = project_platte_carre(dir);;
+  vec3 color = texture2D(skymapTexture, coords.xy).rgb;
+  // TODO(cdonner): Use auto exposure to scale the color.
+  gl_FragColor.rgb = color * 0.35;
+  gl_FragColor.a = 1.;
+}

@@ -1,0 +1,325 @@
+$input "glsles.h"
+#ifdef USE_IMPROVED_SHADER_VARIATION
+$input "atmosphere.glsllib"
+#else
+const float kPi = 3.141592657;
+#endif
+$input "water.glsllib"
+
+#if defined(USE_IMPROVED_SHADER_VARIATION)
+uniform vec4 eye_pos_and_anim_time;
+uniform vec4 fogColorAndDensity;
+// x: atmosphere density.
+// y: atmosphere angle falloff.
+// z: night intensity.
+// w: camera exposure.
+uniform vec4 atmosphereTweaks;
+uniform vec4 waterTweaks;
+
+// Vertex position in water coordinates translated by one Earth radius (so z
+// is the altitude above water, not the distance to the Earth center) and
+// vertex alpha.
+varying vec4 vout_water_pos_and_alpha;
+
+// Implements the abstract function defined in atmosphere.glsllib.
+// Returns a fading factor to attenuate the atmospheric effects when the camera
+// altitude decreases, unless the view zenith angle gets close to the horizon
+// angle.
+float atmosphereTweak(float r, float mu) {
+  float r0 = max(kMinCameraRadius, cameraAndSunState.x);
+  float muHoriz = -sqrt(1.0 - 1.0 / (r * r));
+  float angleFalloff = pow((1.0 + mu) / (1.0 + muHoriz), atmosphereTweaks.y);
+  return clamp(angleFalloff, 0.1, 1.0) * atmosphereTweaks.x;
+}
+
+void main() {
+#if !defined(FORCE_NO_ALPHA_TEST)
+  // If the camera is above kMaxWaterShaderRadius water is displayed as part of
+  // the terrain meshes. We can thus discard any water mesh fragment.
+  if (cameraAndSunState.x > kMaxWaterShaderRadius) {
+    discard;
+  }
+#endif
+
+  // Computes the vertex position in (geocentric) water coordinates.
+  vec3 waterPos = vout_water_pos_and_alpha.xyz.xyz + vec3(0.0, 0.0, 1.0);
+  // Computes the "vertex to camera" vector in water coordinates.
+  vec3 waterCamera = eye_pos_and_anim_time.xyz;
+  vec3 waterPosToCamera = waterCamera - vout_water_pos_and_alpha.xyz;
+
+  // Computes the distance from the camera to the current water fragment.
+  float waterDist = length(waterPosToCamera);
+  // Computes the opposite view ray direction, in water coordinates.
+  vec3 waterViewDir = waterPosToCamera / waterDist;
+  // Computes the normal to the water waves, in water coordinates.
+  vec3 waterNormal = waveNormalWater(waterPos);
+  // Reflects backfacing normals.
+  if (dot(waterViewDir, waterNormal) < 0.0) {
+    waterNormal = reflect(waterNormal, waterViewDir);
+  }
+
+  // Computes the Sun zenith angle at waterPos.
+  float wMuS = dot(waterPos, sunDirWater);
+  // Computes the irradiance due to the sky dome (excluding the Sun).
+  vec3 skyIrradiance = skyTex(1.0, wMuS) * atmosphereTweaks.x;
+  // Computes the radiance of the Sun reaching waterPos, relatively to the outer
+  // Sun radiance. This is the transmittance of the atmosphere from the ground
+  // to the top atmosphere boundary in the Sun direction.
+  vec3 sunRadiance = atmoTex(1.0, wMuS).rgb;
+
+  // The angular size of a pixel times the Earth radius (in radians.kilometers).
+  // TODO(ebruneton): must be a uniform, value depends on screen size.
+  const float kPixelFOV = 0.00128 * 6360.0;
+  // The size of the pixel footprint on the water surface, in kilometers.
+  float pixelSize = kPixelFOV * waterDist * waterDist / abs(waterPosToCamera.z);
+  // The wave slope variance due to waves smaller than pixelSize.
+  float waveSlopeVariance = max(waterWaveSlopeVariance(pixelSize), 2e-5);
+
+  if (cameraAndSunState.x < 1.0) {
+    // Basic ad-hoc shading, not physically-based, for under water views.
+    float viewDirDotNormal = max(0.0, dot(waterViewDir, waterNormal) - 0.05);
+    float skyR = waterMeanFresnel(viewDirDotNormal, waveSlopeVariance);
+    vec3 skyColor = 0.75 * toneMapping(skyIrradiance * (1.0 / kPi),
+        atmosphereTweaks.w);
+    vec3 waterColor = mix(skyColor, fogColorAndDensity.rgb, skyR);
+    float waterAlpha = 1.0 - exp(-100.0 * fogColorAndDensity.w * waterDist);
+
+    vec4 pixelShaderColor = vec4(waterColor * waterAlpha, waterAlpha);
+#ifdef COLOR_DESATURATION
+    ApplyColorDesaturation(pixelShaderColor, colorDesaturation.x);
+#endif
+    gl_FragColor = pixelShaderColor;
+    return;
+  }
+
+  // Computes the radiance of the water, i.e. how much light is reflected at
+  // the water surface, from the Sun and from the sky, in the viewer direction.
+  vec3 waterL = waterRadiance(
+      waterViewDir,
+      waterNormal,
+      sunDirWater,
+      waveSlopeVariance,
+      sunRadiance,
+      skyIrradiance,
+      waterTweaks.x);
+
+  // Computes the opacity of the water, using an adhoc formula assuming an
+  // exponential extinction with depth, and supposing that the vertex alpha
+  // somehow represents the water depth.
+  float waterA = 1.0 - exp(-10.0 * vout_water_pos_and_alpha.a);
+  // Attenuates the opacity of the water when the camera altitude increases, and
+  // when the tilt angle decreases.
+  waterA *= 1.0 - smoothstep(1.0, kMaxWaterShaderRadius, cameraAndSunState.x);
+  waterA *= 1.0 - waterViewDir.z;
+  waterA = clamp(waterA, 0.01, 1.0);
+
+  // Computes the camera to Earth center distance r, the view direction zenith
+  // angle cosinus mu, the Sun zenith angle cosinus muS, and the phase angle
+  // cosinus nu (taking advantage of the fact that waterCamera.xy = 0,0 by
+  // definition of the water coordinate system).
+  float r = cameraAndSunState.x;
+  float rMu = -(waterCamera.z + 1.0) * waterViewDir.z;
+  float rMuS = (waterCamera.z + 1.0) * sunDirWater.z;
+  float nu = -dot(waterViewDir, sunDirWater);
+
+  // If the camera is outside the atmosphere, moves it to the entry point of the
+  // view ray inside the atmosphere (which necessarily exists).
+  if (r > kAtmosphereRadius) {
+    // Computes the distance to the view ray entry point in the atmosphere.
+    float delta = rMu * rMu - r * r + kAtmosphereRadius * kAtmosphereRadius;
+    float distanceToAtmosphereEntryPoint = -rMu - sqrt(delta);
+    // Moves the camera to the view ray entry point inside the atmosphere.
+    r = kAtmosphereRadius;
+    rMu += distanceToAtmosphereEntryPoint;
+    rMuS += distanceToAtmosphereEntryPoint * nu;
+  }
+
+  // Computes the light which is scattered towards the viewer along the view
+  // ray, and the transmittance of the atmosphere along this ray.
+  vec3 transmittance;
+  vec3 inscatterL = inscatter(r, rMu / r, rMuS / r, nu, atmosphereTweaks.w,
+      transmittance);
+
+  // The pixel radiance is the water radiance plus the under water ground
+  // radiance times the water transmittance, multiplied by the atmosphere
+  // transmittance and augmented by the inscattered light. The pixel color is
+  // the tone mapping of this radiance, i.e.
+  //   toneMapping((waterL+groundL*(1-waterA))*transmittance+inscatterL);
+  // But computing this is not possible without deferred shading, as the water
+  // and ground meshes are drawn and tone mapped separately. If we simply output
+  //   toneMapping(waterL*transmittance+inscatterL)
+  // then the end result on screen will be
+  //   toneMapping(waterL*transmittance+inscatterL) +
+  //     toneMapping(groundL*transmittance+inscatterL)*(1-waterA);
+  // which is quite different from what we want. Lets suppose we know, in this
+  // shader, the value of groundL. Then we can output the pre-alpha multiplied
+  // value
+  //   toneMapping((waterL+groundL*(1-waterA))*transmittance+inscatterL) -
+  //     toneMapping(groundL*transmittance+inscatterL)*(1-waterA)
+  // in order to get exactly the end value we want on screen. In practice we
+  // cannot know groundL, but we can use an approximate value. The more accurate
+  // this value is, the more accurate the end result will be. Here we
+  // approximate groundL with 0, because the ground texture near water is likely
+  // to already contain water colors, which are quite dark. Using 0 also prevent
+  // us from outputing negative values, which would be clamped. So, in the end,
+  // we output:
+  vec4 pixelShaderColor =
+    vec4(toneMapping(
+             waterL * waterA * transmittance + inscatterL, atmosphereTweaks.w) -
+         toneMapping(inscatterL, atmosphereTweaks.w) * (1.0 - waterA),
+         waterA);
+#ifdef COLOR_DESATURATION
+  ApplyColorDesaturation(pixelShaderColor, colorDesaturation.x);
+#endif
+  gl_FragColor = pixelShaderColor;
+}
+
+#else
+
+// Wave steepness: higher values yield more noticeable waves.
+const float wave_steepness = 0.6;
+// Alpha factor for refracted color. Higher values make refracted water
+// more opaque.
+const float refraction_alpha_factor = 0.3;
+const vec3 ground_color = vec3(0.1, 0.17, 0.27);
+
+varying vec4 vout_normal_and_alpha;
+varying vec4 vout_water_to_eye_dir_and_fog_factor;
+varying vec4 vout_bump_coords_01;
+varying vec4 vout_bump_coords_23;
+
+// XYZ: fog color
+// W: Current frame's maximum alpha.
+uniform vec4 fog_color_and_max_alpha;
+uniform sampler2D bump_map;
+// Although this could be a 1D texture, Alchemy using OpenGL
+// chokes on sampler1Ds.
+uniform sampler2D sky_reflection_map;
+// Weights of bump map samples at each visible level.
+uniform vec4 bump_weights;
+// X: 2 / sum_of_elements(bump_weights).
+uniform vec4 fragment_constants;
+
+#ifndef USE_SIMPLIFIED_SHADER_VARIATION
+
+// Computes Fresnel factor using the subtraction method:
+//     F = 1 - v.n
+float ComputeFresnelSimpleSubtraction(vec3 water_to_eye_dir, vec3 normal) {
+  float subtraction = 1.0 - dot(water_to_eye_dir, normal);
+  return subtraction;
+}
+
+// Computes Fresnel factor using the subtraction^4 method:
+//     F = (1 - v.n)^4
+float ComputeFresnelSimpleSubtraction4(vec3 water_to_eye_dir, vec3 normal) {
+  float subtraction = 1.0 - dot(water_to_eye_dir, normal);
+  float subtraction_2 = subtraction * subtraction;
+  float subtraction_4 = subtraction_2 * subtraction_2;
+  return subtraction_4;
+}
+
+// Computes Fresnel factor using the Jensen and Golias simplification:
+//     F = 1/(1 + v.n)^8
+float ComputeFresnelJensenGolias(vec3 water_to_eye_dir, vec3 normal) {
+  float sum_term = 1.0 + dot(water_to_eye_dir, normal);
+  float sum_term_2 = sum_term * sum_term;
+  float sum_term_4 = sum_term_2 * sum_term_2;
+  float sum_term_8 = sum_term_4 * sum_term_4;
+  return 1.0 / sum_term_8;
+}
+
+// Computes Fresnel factor using the power simplification:
+//     F = b + (1 - b) * (1 - v.n)^p
+float ComputeFresnelPow(vec3 water_to_eye_dir, vec3 normal) {
+  const float fresnel_bias = 0.2;
+  const float fresnel_pow = 5.0;
+  float dot_prod = dot(water_to_eye_dir, normal);
+  return fresnel_bias + (1.0 - fresnel_bias) * pow(1.0 - dot_prod, fresnel_pow);
+}
+
+// Computes Fresnel factor for water.
+float ComputeFresnel(vec3 water_to_eye_dir, vec3 normal) {
+  return ComputeFresnelSimpleSubtraction(water_to_eye_dir, normal);
+}
+
+#endif // USE_SIMPLIFIED_SHADER_VARIATION
+
+void main() {
+  vec3 bump_value_0 =
+      texture2D(bump_map, vout_bump_coords_01.xy).xyz * bump_weights[0];
+  vec3 bump_value_1 =
+      texture2D(bump_map, vout_bump_coords_01.zw).xyz * bump_weights[1];
+  vec3 bump_value_2 =
+      texture2D(bump_map, vout_bump_coords_23.xy).xyz * bump_weights[2];
+  vec3 bump_value_3 =
+      texture2D(bump_map, vout_bump_coords_23.zw).xyz * bump_weights[3];
+  // Sum up bump values and rescale result to a normalized vector.
+  vec3 sum_bumps = bump_value_0 + bump_value_1 + bump_value_2 + bump_value_3;
+  float two_over_sum_bump_weights = fragment_constants[0];
+  vec3 normalized_sum_bumps = two_over_sum_bump_weights * sum_bumps - 1.0;
+
+  float alpha = vout_normal_and_alpha.w;
+  float max_alpha = fog_color_and_max_alpha.w;
+  float max_vertex_alpha = alpha * max_alpha;
+
+#ifdef USE_SIMPLIFIED_SHADER_VARIATION
+  vec3 normal = normalized_sum_bumps;
+  // sun vector of (2, 0, 1), or (.377*2, 0, .377) after normalization,
+  // gives good directional wave appearance. (0,0,1) has a random look.
+  float dot_normal_sun = dot(vec3(-.377 * 2.0, 0, -0.377), normal);
+
+  // wave highlight color is greenish white
+  const vec3 highlight_color = vec3(0.8, 1.0, 0.85);
+
+  float highlight = (dot_normal_sun + 1.0) * 0.5;
+  highlight = highlight*highlight;
+  vec4 water_color = vec4(highlight_color*highlight+ground_color,
+      highlight * max_vertex_alpha);
+#else
+  // TODO(quarup): investigate:
+  //     1. not normalizing these
+  //     2. using cubemaps for normalizing vectors
+  vec3 water_to_eye_dir = normalize(vout_water_to_eye_dir_and_fog_factor.xyz);
+  vec3 normal = normalize(vout_normal_and_alpha.xyz);
+
+  // Use bump map result more for pixels closer to the camera. These are the
+  // pixels with normals with greater Z components.
+  normal = mix(normal, normalized_sum_bumps, normal.z * wave_steepness);
+
+  float fresnel = ComputeFresnel(water_to_eye_dir, normal);
+
+  // Compute reflected color using vectors in water coordinates.
+  // Note Cg reflect(I, N) assumes I is the incoming vector.
+  // TODO(quarup): find out if we can optimize by not using reflect() and
+  //     doing the math ourselves.
+  vec3 reflected = reflect(-water_to_eye_dir, normal);
+  // Sun is directly overhead in water coordinates when sun mode is off.
+  const vec3 camera_to_sun_dir = vec3(0.0, 0.0, 1.0);
+  // Cosine of angle between reflected ray and water-to-sun direction.
+  float cos_angle_reflected_and_sun = dot(reflected, camera_to_sun_dir);
+
+  // Look up reflected color depending on the angle between the sun and
+  // the reflected direction.
+  // The reflection map is really a 1D texture, but 1D texture look ups
+  // are broken in Alchemy using OpenGL.
+  vec4 reflected_color = vec4(
+      texture2D(sky_reflection_map, vec2(cos_angle_reflected_and_sun, 0.5)).rgb,
+      max_vertex_alpha);
+
+  vec4 refracted_color =
+      vec4(ground_color, refraction_alpha_factor * max_vertex_alpha);
+
+  vec4 water_color = mix(refracted_color, reflected_color, fresnel);
+#endif
+
+  vec4 fog_color = vec4(fog_color_and_max_alpha.xyz, 1.0);
+  float fog_factor = vout_water_to_eye_dir_and_fog_factor.w;
+
+  vec4 pixelShaderColor = mix(fog_color, water_color, fog_factor);
+#ifdef COLOR_DESATURATION
+  ApplyColorDesaturation(pixelShaderColor, colorDesaturation.x);
+#endif
+  gl_FragColor = pixelShaderColor;
+}
+
+#endif

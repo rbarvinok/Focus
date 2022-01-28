@@ -12,6 +12,4 @@ public class DeleteAllFilesFolder {
                 if (myFile.isFile()) myFile.delete();
         }
     }
-
-
 }

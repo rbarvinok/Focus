@@ -1,0 +1,148 @@
+!!ARBvp1.0
+# cgc version 2.2.0017, build date Jan 29 2010
+# command line args: -profile arbvp1 -quiet
+#vendor NVIDIA Corporation
+#version 2.2.0.17
+#profile arbvp1
+#program vmain
+#semantic vmain.batch_model_view_proj
+#semantic vmain.batch_camera_location
+#semantic vmain.batch_camera_direction
+#semantic vmain.batch_camera_params
+#semantic vmain.lightDirection
+#semantic vmain.treeRotationVector
+#semantic vmain.treePosAndScale
+#semantic vmain.lod_profile
+#semantic vmain.materialDiffuse
+#var float3 sIn.m_vPosition : $vin.POSITION : POSITION : 0 : 1
+#var float3 sIn.m_vNormal : $vin.NORMAL : NORMAL : 0 : 1
+#var float4 sIn.m_vTexCoords : $vin.TEXCOORD0 : TEXCOORD0 : 0 : 1
+#var float4 sIn.m_vCorner : $vin.TEXCOORD1 : TEXCOORD1 : 0 : 1
+#var float4 sIn.m_vTangent : $vin.TEXCOORD2 : TEXCOORD2 : 0 : 1
+#var float4 sIn.m_vBinormal : $vin.TEXCOORD3 : TEXCOORD3 : 0 : 1
+#var float4x4 batch_model_view_proj :  : c[1], 4 : 1 : 1
+#var float3 batch_camera_location :  : c[5] : 2 : 1
+#var float3 batch_camera_direction :  : c[6] : 3 : 1
+#var float4 batch_camera_params :  : c[7] : 4 : 1
+#var float3 lightDirection :  : c[8] : 5 : 1
+#var float4 treeRotationVector :  : c[9] : 6 : 1
+#var float4 treePosAndScale :  : c[10] : 7 : 1
+#var float4 lod_profile :  : c[11] : 8 : 1
+#var float4 materialDiffuse :  : c[12] : 9 : 1
+#var float4 vmain.m_vPosition : $vout.POSITION : HPOS : -1 : 1
+#var float4 vmain.m_vDiffuseTexCoords : $vout.TEXCOORD0 : TEX0 : -1 : 1
+#var float4 vmain.m_vNormalVec : $vout.TEXCOORD1 : TEX1 : -1 : 1
+#const c[0] = 0 0.15915491 1 -1
+#const c[13] = 0.25 0.5 0.75 1
+#const c[14] = -24.980801 60.145809 -85.453789 64.939346
+#const c[15] = -19.73921 1 0.44999999
+PARAM c[16] = { { 0, 0.15915491, 1, -1 },
+		program.local[1..12],
+		{ 0.25, 0.5, 0.75, 1 },
+		{ -24.980801, 60.145809, -85.453789, 64.939346 },
+		{ -19.73921, 1, 0.44999999 } };
+TEMP R0;
+TEMP R1;
+TEMP R2;
+TEMP R3;
+TEMP R4;
+TEMP R5;
+MOV R0.w, c[0].y;
+MUL R0.x, R0.w, c[7].w;
+FRC R2.z, R0.x;
+SLT R1, R2.z, c[13];
+ADD R0.xyz, R1.yzww, -R1;
+MOV R1.yzw, R0.xxyz;
+MUL R0.w, R0, c[7].z;
+DP4 R2.y, R1, c[13].xxzz;
+DP3 R2.x, R0, c[13].yyww;
+FRC R2.w, R0;
+ADD R3.xy, R2.z, -R2;
+SLT R0, R2.w, c[13];
+ADD R2.xyz, R0.yzww, -R0;
+MUL R4.xy, R3, R3;
+MOV R0.yzw, R2.xxyz;
+DP4 R3.y, R0, c[13].xxzz;
+DP3 R3.x, R2, c[13].yyww;
+ADD R2.xy, R2.w, -R3;
+MUL R4.zw, R2.xyxy, R2.xyxy;
+MUL R3.xy, R4, R4;
+MAD R2, R3.xxyy, c[14].xyxy, c[14].zwzw;
+MAD R2, R2, R3.xxyy, c[15].xyxy;
+MUL R5.xy, R4.zwzw, R4.zwzw;
+MAD R3, R5.xxyy, c[14].xyxy, c[14].zwzw;
+MAD R4.xy, R2.xzzw, R4, R2.ywzw;
+MAD R2, R3, R5.xxyy, c[15].xyxy;
+DP4 R3.y, R1, c[0].zzww;
+DP4 R3.x, R1, c[0].zwwz;
+MUL R1.xy, R3, R4;
+MAD R2.xy, R2.xzzw, R4.zwzw, R2.ywzw;
+DP4 R1.w, R0, c[0].zzww;
+DP4 R1.z, R0, c[0].zwwz;
+MUL R1.zw, R1, R2.xyxy;
+MOV R0.xz, R1.xyyw;
+MOV R0.y, c[0].x;
+MUL R2.xy, -R1.w, c[0].xzzw;
+MAD R2.xyz, R1.z, R0, R2.xyxw;
+ADD R3.xyz, R2, c[0].x;
+MUL R2.xy, R1.z, c[0].xzzw;
+MAD R2.xyz, R1.w, R0, R2.xyxw;
+ADD R0.w, vertex.texcoord[0].z, -vertex.texcoord[0];
+MAD R0.x, R0.w, c[9].z, vertex.texcoord[0].w;
+MUL R0.yz, vertex.texcoord[1].xxyw, R0.x;
+MOV R0.w, c[0].x;
+ADD R2.xyz, R2, c[0].x;
+MOV R0.x, c[0];
+DP3 R2.y, R0, R2;
+DP3 R2.x, R0, R3;
+MOV R1.w, c[0].z;
+MOV R3.x, -R1.y;
+MOV R3.z, R1.x;
+MOV R3.y, c[0].x;
+DP3 R2.z, R3, R0;
+MOV R0.xy, c[9];
+MOV R0.z, -c[9].x;
+DP3 R1.x, R0.yxww, vertex.position;
+DP3 R1.y, R0.zyww, vertex.position;
+MOV R1.z, vertex.position;
+ADD R1.xyz, R1, R2;
+MAD R2.xyz, R1, c[10].w, c[10];
+MUL R1.x, vertex.texcoord[1].w, c[10].w;
+MAD R1.xyz, R1.x, c[6], R2;
+DP4 result.position.w, R1, c[4];
+DP4 result.position.z, R1, c[3];
+DP4 result.position.y, R1, c[2];
+DP4 result.position.x, R1, c[1];
+ADD R1.w, c[11], -c[11].z;
+DP3 R1.x, R0.yxww, vertex.normal;
+DP3 R1.y, R0.zyww, vertex.normal;
+MOV R1.z, vertex.normal;
+DP3 result.texcoord[1].z, R1, c[8];
+DP3 R1.x, R0.yxww, vertex.texcoord[3];
+DP3 R1.y, R0.zyww, vertex.texcoord[3];
+DP3 R0.x, R0.yxww, vertex.texcoord[2];
+DP3 R0.y, R0.zyww, vertex.texcoord[2];
+MOV R1.z, vertex.texcoord[3];
+DP3 result.texcoord[1].y, R1, c[8];
+MOV R1.xyz, c[5];
+ADD R1.xyz, -R1, c[10];
+DP3 R1.x, R1, R1;
+MUL R1.w, R1, c[15].z;
+ADD R1.y, R1.w, c[11].z;
+RSQ R1.x, R1.x;
+ADD R1.z, -R1.y, c[11].w;
+RCP R1.x, R1.x;
+MOV R0.z, vertex.texcoord[2];
+RCP R1.z, R1.z;
+ADD R1.x, R1, -R1.y;
+MUL R1.x, R1, R1.z;
+MIN R1.x, R1, c[0].z;
+MAX R0.w, R1.x, c[0].x;
+ADD R0.w, -R0, c[0].z;
+DP3 result.texcoord[1].x, R0, c[8];
+MUL result.texcoord[0].w, R0, c[12];
+MOV result.texcoord[0].xy, vertex.texcoord[0];
+MOV result.texcoord[0].z, c[0].x;
+MOV result.texcoord[1].w, c[0].z;
+END
+# 97 instructions, 6 R-regs

@@ -9,7 +9,7 @@
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane id="box" cacheShape="false" centerShape="false" focusTraversable="true" onDragDetected="#OnClick_btnAboutExit" prefHeight="500.0" prefWidth="600.0" scaleShape="false" style="-fx-border-color: 0d0d0d;" styleClass="box" stylesheets="@../styles/day.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller_about">
+<AnchorPane id="box" cacheShape="false" centerShape="false" focusTraversable="true" onDragDetected="#OnClick_btnAboutExit" prefHeight="500.0" prefWidth="600.0" scaleShape="false" style="-fx-border-color: 0d0d0d;" styleClass="box" stylesheets="@../styles/day.css" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ua.focus.controller.Controller_about">
    <children>
       <ImageView fitHeight="290.0" fitWidth="278.0" layoutX="198.0" layoutY="111.0" onDragDetected="#OnClick_btnAboutExit" onKeyPressed="#OnClick_btnAboutExit" onMouseDragEntered="#OnClick_btnAboutExit" pickOnBounds="true" preserveRatio="true" AnchorPane.leftAnchor="175.0" AnchorPane.rightAnchor="175.0">
          <image>
@@ -51,7 +51,7 @@
                </color></DropShadow>
          </effect>
       </Button>
-      <Label layoutX="63.0" layoutY="378.0" prefHeight="68.0" prefWidth="548.0" text="Державний науково-дослідний інститут випробувань та сертифікації озброєння і військової техніки" textAlignment="CENTER" textFill="#05f531" wrapText="true">
+      <Label layoutX="63.0" layoutY="378.0" prefHeight="68.0" prefWidth="548.0" text="Державний науково-дослідний інститут випробувань і сертифікації озброєння та військової техніки" textAlignment="CENTER" textFill="#05f531" wrapText="true">
          <font>
             <Font name="System Bold Italic" size="18.0" />
          </font>

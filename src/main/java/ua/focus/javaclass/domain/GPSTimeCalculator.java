@@ -27,7 +27,6 @@ public class GPSTimeCalculator {
         Date date = new Date(unixSeconds / 1000);
         // the format of your date
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.S");
-        // give a timezone reference for formatting (see comment at the bottom)
         sdf.setTimeZone(TimeZone.getTimeZone(localZone));
         String formattedDate = sdf.format(date);
         //System.out.println(formattedDate + "\n");
